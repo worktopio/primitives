@@ -225,6 +225,7 @@ function usePointerDownOutside(onPointerDownOutside?: (event: PointerDownOutside
   const isPointerInsideReactTreeRef = React.useRef(false);
 
   React.useEffect(() => {
+    let rafId = 0;
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target;
       if (target && !isPointerInsideReactTreeRef.current) {
@@ -237,8 +238,26 @@ function usePointerDownOutside(onPointerDownOutside?: (event: PointerDownOutside
       }
       isPointerInsideReactTreeRef.current = false;
     };
-    document.addEventListener('pointerdown', handlePointerDown);
-    return () => document.removeEventListener('pointerdown', handlePointerDown);
+    /**
+     * if this hook executes in a component that mounts via a `pointerdown` event, the event
+     * would bubble up to the document and trigger a `pointerDownOutside` event. We avoid
+     * this by delaying the event listener registration on the document.
+     * This is not React specific, but rather how the DOM works, ie:
+     * ```
+     * button.addEventListener('pointerdown', () => {
+     *   console.log('I will log');
+     *   document.addEventListener('pointerdown', () => {
+     *     console.log('I will also log');
+     *   })
+     * });
+     */
+    rafId = requestAnimationFrame(() => {
+      document.addEventListener('pointerdown', handlePointerDown);
+    });
+    return () => {
+      cancelAnimationFrame(rafId);
+      document.removeEventListener('pointerdown', handlePointerDown);
+    };
   }, [handlePointerDownOutside]);
 
   return {
