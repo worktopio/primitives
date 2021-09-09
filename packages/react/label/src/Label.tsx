@@ -14,10 +14,7 @@ const NAME = 'Label';
 
 type LabelContextValue = { id: string; ref: React.RefObject<HTMLSpanElement> };
 
-const [LabelProvider, useLabelContextImpl] = createContext<LabelContextValue | undefined>(
-  NAME,
-  undefined
-);
+const [LabelProvider, useLabelContextImpl] = createContext<LabelContextValue | null>(NAME, null);
 
 type LabelElement = React.ElementRef<typeof Primitive.span>;
 type PrimitiveSpanProps = Radix.ComponentPropsWithoutRef<typeof Primitive.span>;
@@ -90,8 +87,8 @@ const useLabelContext = (element?: HTMLElement | null) => {
   const context = useLabelContextImpl(CONSUMER_NAME);
 
   React.useEffect(() => {
-    const label = context?.ref.current;
-
+    if (context === null) return;
+    const label = context.ref.current;
     if (label && element) {
       return addLabelClickEventListener(label, element);
     }
