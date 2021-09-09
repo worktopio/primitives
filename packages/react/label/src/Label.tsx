@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { createContext } from '@radix-ui/react-context';
 import { useComposedRefs } from '@radix-ui/react-compose-refs';
 import { Primitive } from '@radix-ui/react-primitive';
 import { useId } from '@radix-ui/react-id';
@@ -12,7 +13,11 @@ import type * as Radix from '@radix-ui/react-primitive';
 const NAME = 'Label';
 
 type LabelContextValue = { id: string; ref: React.RefObject<HTMLSpanElement> };
-const LabelContext = React.createContext<LabelContextValue | undefined>(undefined);
+
+const [LabelProvider, useLabelContextImpl] = createContext<LabelContextValue | undefined>(
+  NAME,
+  undefined
+);
 
 type LabelElement = React.ElementRef<typeof Primitive.span>;
 type PrimitiveSpanProps = Radix.ComponentPropsWithoutRef<typeof Primitive.span>;
@@ -69,9 +74,9 @@ const Label = React.forwardRef<LabelElement, LabelProps>((props, forwardedRef) =
   }, [id, htmlFor]);
 
   return (
-    <LabelContext.Provider value={React.useMemo(() => ({ id, ref: labelRef }), [id])}>
+    <LabelProvider id={id} ref={labelRef}>
       <Primitive.span role="label" id={id} {...labelProps} ref={ref} />
-    </LabelContext.Provider>
+    </LabelProvider>
   );
 });
 
@@ -79,8 +84,10 @@ Label.displayName = NAME;
 
 /* -----------------------------------------------------------------------------------------------*/
 
+const CONSUMER_NAME = 'LabelConsumer';
+
 const useLabelContext = (element?: HTMLElement | null) => {
-  const context = React.useContext(LabelContext);
+  const context = useLabelContextImpl(CONSUMER_NAME);
 
   React.useEffect(() => {
     const label = context?.ref.current;
