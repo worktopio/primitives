@@ -96,10 +96,9 @@ function createCollection<ItemElement extends HTMLElement, ItemData>() {
   /* -----------------------------------------------------------------------------------------------
    * useCollection
    * ---------------------------------------------------------------------------------------------*/
-  const CONSUMER_NAME = 'CollectionConsumer';
 
   function useCollection() {
-    const context = useCollectionContext(CONSUMER_NAME);
+    const context = useCollectionContext('CollectionConsumer');
     return {
       getItems() {
         const collection = context.collectionRef.current;

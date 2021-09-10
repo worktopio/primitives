@@ -12,7 +12,7 @@ import type * as Radix from '@radix-ui/react-primitive';
 
 const NAME = 'Label';
 
-type LabelContextValue = { id: string; ref: React.RefObject<HTMLSpanElement> };
+type LabelContextValue = { id: string; labelRef: React.RefObject<HTMLSpanElement> };
 
 const [LabelProvider, useLabelContextImpl] = createContext<LabelContextValue | null>(NAME, null);
 
@@ -71,7 +71,7 @@ const Label = React.forwardRef<LabelElement, LabelProps>((props, forwardedRef) =
   }, [id, htmlFor]);
 
   return (
-    <LabelProvider id={id} ref={labelRef}>
+    <LabelProvider id={id} labelRef={labelRef}>
       <Primitive.span role="label" id={id} {...labelProps} ref={ref} />
     </LabelProvider>
   );
@@ -81,14 +81,12 @@ Label.displayName = NAME;
 
 /* -----------------------------------------------------------------------------------------------*/
 
-const CONSUMER_NAME = 'LabelConsumer';
-
 const useLabelContext = (element?: HTMLElement | null) => {
-  const context = useLabelContextImpl(CONSUMER_NAME);
+  const context = useLabelContextImpl('LabelConsumer');
 
   React.useEffect(() => {
     if (context === null) return;
-    const label = context.ref.current;
+    const label = context.labelRef.current;
     if (label && element) {
       return addLabelClickEventListener(label, element);
     }
