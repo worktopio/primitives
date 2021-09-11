@@ -52,7 +52,7 @@ type RovingContextValue = RovingFocusGroupOptions & {
   onItemShiftTab(): void;
 };
 
-const [RovingFocusProvider, useRovingFocusContext] = createContext<RovingContextValue>(GROUP_NAME);
+const [RovingFocusProvider, useRovingFocusContext] = createContext<RovingContextValue>();
 
 type RovingFocusGroupElement = RovingFocusGroupImplElement;
 interface RovingFocusGroupProps extends RovingFocusGroupImplProps {}

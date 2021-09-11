@@ -32,14 +32,15 @@ const [
  * DismissableLayer
  * -----------------------------------------------------------------------------------------------*/
 
-const DISMISSABLE_LAYER_NAME = 'DismissableLayer';
+const ROOT_NAME = 'DismissableLayer';
 
 type DismissableLayerElement = DismissableLayerImplElement;
 interface DismissableLayerProps extends DismissableLayerImplProps {}
 
 const DismissableLayer = React.forwardRef<DismissableLayerElement, DismissableLayerProps>(
   (props, forwardedRef) => {
-    const runningLayerCount = usePreviousRunningLayerCount();
+    const { __part = ROOT_NAME } = props;
+    const runningLayerCount = usePreviousRunningLayerCount(__part);
     const isRootLayer = runningLayerCount === 0;
     const layer = <DismissableLayerImpl {...props} ref={forwardedRef} />;
 
@@ -57,13 +58,13 @@ const DismissableLayer = React.forwardRef<DismissableLayerElement, DismissableLa
   }
 );
 
-DismissableLayer.displayName = DISMISSABLE_LAYER_NAME;
+DismissableLayer.displayName = ROOT_NAME;
 
 /* -----------------------------------------------------------------------------------------------*/
 
 type DismissableLayerImplElement = React.ElementRef<typeof Primitive.div>;
 type PrimitiveDivProps = Radix.ComponentPropsWithoutRef<typeof Primitive.div>;
-interface DismissableLayerImplProps extends PrimitiveDivProps {
+interface DismissableLayerImplProps extends Omit<PrimitiveDivProps, '__scope'> {
   /**
    * When `true`, hover/focus/click interactions will be disabled on elements outside
    * the `DismissableLayer`. Users will need to click twice on outside elements to
@@ -105,6 +106,7 @@ const DismissableLayerImpl = React.forwardRef<
   DismissableLayerImplProps
 >((props, forwardedRef) => {
   const {
+    __part = ROOT_NAME,
     disableOutsidePointerEvents = false,
     onEscapeKeyDown,
     onPointerDownOutside,
@@ -114,15 +116,15 @@ const DismissableLayerImpl = React.forwardRef<
     ...layerProps
   } = props;
 
-  const totalLayerCount = useTotalLayerCount();
-  const prevRunningLayerCount = usePreviousRunningLayerCount();
+  const totalLayerCount = useTotalLayerCount(__part, true);
+  const prevRunningLayerCount = usePreviousRunningLayerCount(__part);
   const runningLayerCount = prevRunningLayerCount + 1;
   const isDeepestLayer = runningLayerCount === totalLayerCount;
 
   const totalLayerCountWithDisabledOutsidePointerEvents =
-    useTotalLayerCountWithDisabledOutsidePointerEvents(disableOutsidePointerEvents);
+    useTotalLayerCountWithDisabledOutsidePointerEvents(__part, disableOutsidePointerEvents);
   const prevRunningLayerCountWithDisabledOutsidePointerEvents =
-    usePreviousRunningLayerCountWithDisabledOutsidePointerEvents();
+    usePreviousRunningLayerCountWithDisabledOutsidePointerEvents(__part);
   const runningLayerCountWithDisabledOutsidePointerEvents =
     prevRunningLayerCountWithDisabledOutsidePointerEvents + (disableOutsidePointerEvents ? 1 : 0);
   const containsChildLayerWithDisabledOutsidePointerEvents =
@@ -185,6 +187,10 @@ const DismissableLayerImpl = React.forwardRef<
       >
         <Primitive.div
           {...layerProps}
+          // Dismissable layer should always be its own scope because we need
+          // layering information across all component types
+          __scope={ROOT_NAME}
+          __part={__part}
           ref={forwardedRef}
           style={{
             pointerEvents: shouldReEnablePointerEvents ? 'auto' : undefined,
@@ -302,15 +308,19 @@ function useFocusOutside(onFocusOutside?: (event: FocusOutsideEvent) => void) {
  * -----------------------------------------------------------------------------------------------*/
 
 function createTotalLayerCount(displayName?: string) {
-  const [TotalLayerCountProviderImpl, useTotalLayerCountContext] = createContext(
-    'TotalLayerCount',
-    { total: 0, onTotalIncrease: () => {}, onTotalDecrease: () => {} }
-  );
+  const [TotalLayerCountProviderImpl, useTotalLayerCountContext] = createContext({
+    total: 0,
+    onTotalIncrease: () => {},
+    onTotalDecrease: () => {},
+  });
 
-  const TotalLayerCountProvider: React.FC = ({ children }) => {
+  const TotalLayerCountProvider: React.FC<
+    Pick<Radix.ComponentPropsWithoutRef<typeof TotalLayerCountProviderImpl>, 'scope'>
+  > = ({ scope, children }) => {
     const [total, setTotal] = React.useState(0);
     return (
       <TotalLayerCountProviderImpl
+        scope={scope}
         total={total}
         onTotalIncrease={React.useCallback(() => setTotal((n) => n + 1), [])}
         onTotalDecrease={React.useCallback(() => setTotal((n) => n - 1), [])}
@@ -323,9 +333,8 @@ function createTotalLayerCount(displayName?: string) {
     TotalLayerCountProvider.displayName = displayName;
   }
 
-  function useTotalLayerCount(counted = true) {
-    const { total, onTotalIncrease, onTotalDecrease } =
-      useTotalLayerCountContext('TotalLayerCountConsumer');
+  function useTotalLayerCount(part: string, counted = true) {
+    const { total, onTotalIncrease, onTotalDecrease } = useTotalLayerCountContext(ROOT_NAME, part);
 
     React.useLayoutEffect(() => {
       if (counted) {
@@ -341,9 +350,7 @@ function createTotalLayerCount(displayName?: string) {
 }
 
 function createRunningLayerCount(displayName?: string) {
-  const [RunningLayerCountProviderImp, useRunningLayerCount] = createContext('RunningLayerCount', {
-    count: 0,
-  });
+  const [RunningLayerCountProviderImp, useRunningLayerCount] = createContext({ count: 0 });
 
   const RunningLayerCountProvider: React.FC<{ runningCount: number }> = (props) => {
     const { children, runningCount } = props;
@@ -355,8 +362,8 @@ function createRunningLayerCount(displayName?: string) {
     RunningLayerCountProvider.displayName = displayName;
   }
 
-  function usePreviousRunningLayerCount() {
-    const context = useRunningLayerCount('RunningLayerCountConsumer');
+  function usePreviousRunningLayerCount(part: string) {
+    const context = useRunningLayerCount(ROOT_NAME, part);
     return context.count || 0;
   }
 

@@ -16,9 +16,12 @@ const ROOT_NAME = 'AlertDialog';
 type DialogProps = Radix.ComponentPropsWithoutRef<typeof DialogPrimitive.Root>;
 interface AlertDialogProps extends Omit<DialogProps, 'modal'> {}
 
-const AlertDialog: React.FC<AlertDialogProps> = (props) => (
-  <DialogPrimitive.Root {...props} modal={true} />
-);
+const AlertDialog: React.FC<AlertDialogProps> = (props) => {
+  const { __scope = ROOT_NAME, __part = ROOT_NAME, ...alertDialogProps } = props;
+  return (
+    <DialogPrimitive.Root {...alertDialogProps} __scope={__scope} __part={__part} modal={true} />
+  );
+};
 
 AlertDialog.displayName = ROOT_NAME;
 
@@ -32,7 +35,17 @@ type DialogTriggerProps = Radix.ComponentPropsWithoutRef<typeof DialogPrimitive.
 interface AlertDialogTriggerProps extends DialogTriggerProps {}
 
 const AlertDialogTrigger = React.forwardRef<AlertDialogTriggerElement, AlertDialogTriggerProps>(
-  (props, forwardedRef) => <DialogPrimitive.Trigger {...props} ref={forwardedRef} />
+  (props, forwardedRef) => {
+    const { __scope = ROOT_NAME, __part = TRIGGER_NAME, ...triggerProps } = props;
+    return (
+      <DialogPrimitive.Trigger
+        {...triggerProps}
+        __scope={__scope}
+        __part={__part}
+        ref={forwardedRef}
+      />
+    );
+  }
 );
 
 AlertDialogTrigger.displayName = TRIGGER_NAME;
@@ -48,7 +61,17 @@ type DialogOverlayProps = Radix.ComponentPropsWithoutRef<typeof DialogPrimitive.
 interface AlertDialogOverlayProps extends DialogOverlayProps {}
 
 const AlertDialogOverlay = React.forwardRef<AlertDialogOverlayElement, AlertDialogOverlayProps>(
-  (props, forwardedRef) => <DialogPrimitive.Overlay {...props} ref={forwardedRef} />
+  (props, forwardedRef) => {
+    const { __scope = ROOT_NAME, __part = OVERLAY_NAME, ...overlayProps } = props;
+    return (
+      <DialogPrimitive.Overlay
+        {...overlayProps}
+        __scope={__scope}
+        __part={__part}
+        ref={forwardedRef}
+      />
+    );
+  }
 );
 
 AlertDialogOverlay.displayName = OVERLAY_NAME;
@@ -64,7 +87,7 @@ type AlertDialogContentContextValue = {
 };
 
 const [AlertDialogContentProvider, useAlertDialogContentContext] =
-  createContext<AlertDialogContentContextValue>(CONTENT_NAME);
+  createContext<AlertDialogContentContextValue>();
 
 type AlertDialogContentElement = React.ElementRef<typeof DialogPrimitive.Content>;
 type DialogContentProps = Radix.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>;
@@ -73,7 +96,7 @@ interface AlertDialogContentProps
 
 const AlertDialogContent = React.forwardRef<AlertDialogContentElement, AlertDialogContentProps>(
   (props, forwardedRef) => {
-    const { children, ...contentProps } = props;
+    const { __scope = ROOT_NAME, __part = CONTENT_NAME, children, ...contentProps } = props;
     const contentRef = React.useRef<AlertDialogContentElement>(null);
     const composedRefs = useComposedRefs(forwardedRef, contentRef);
     const cancelRef = React.useRef<AlertDialogCancelElement | null>(null);
@@ -84,10 +107,12 @@ const AlertDialogContent = React.forwardRef<AlertDialogContentElement, AlertDial
         titleName={TITLE_NAME}
         docsSlug="alert-dialog"
       >
-        <AlertDialogContentProvider cancelRef={cancelRef}>
+        <AlertDialogContentProvider scope={__scope} cancelRef={cancelRef}>
           <DialogPrimitive.Content
             role="alertdialog"
             {...contentProps}
+            __scope={__scope}
+            __part={__part}
             ref={composedRefs}
             onOpenAutoFocus={composeEventHandlers(contentProps.onOpenAutoFocus, (event) => {
               event.preventDefault();
@@ -126,7 +151,12 @@ type DialogTitleProps = Radix.ComponentPropsWithoutRef<typeof DialogPrimitive.Ti
 interface AlertDialogTitleProps extends DialogTitleProps {}
 
 const AlertDialogTitle = React.forwardRef<AlertDialogTitleElement, AlertDialogTitleProps>(
-  (props, forwardedRef) => <DialogPrimitive.Title {...props} ref={forwardedRef} />
+  (props, forwardedRef) => {
+    const { __scope = ROOT_NAME, __part = TITLE_NAME, ...titleProps } = props;
+    return (
+      <DialogPrimitive.Title {...titleProps} __scope={__scope} __part={__part} ref={forwardedRef} />
+    );
+  }
 );
 
 AlertDialogTitle.displayName = TITLE_NAME;
@@ -144,7 +174,17 @@ interface AlertDialogDescriptionProps extends DialogDescriptionProps {}
 const AlertDialogDescription = React.forwardRef<
   AlertDialogDescriptionElement,
   AlertDialogDescriptionProps
->((props, forwardedRef) => <DialogPrimitive.Description {...props} ref={forwardedRef} />);
+>((props, forwardedRef) => {
+  const { __scope = ROOT_NAME, __part = DESCRIPTION_NAME, ...descriptionProps } = props;
+  return (
+    <DialogPrimitive.Description
+      {...descriptionProps}
+      __scope={__scope}
+      __part={__part}
+      ref={forwardedRef}
+    />
+  );
+});
 
 AlertDialogDescription.displayName = DESCRIPTION_NAME;
 
@@ -159,7 +199,17 @@ type DialogCloseProps = Radix.ComponentPropsWithoutRef<typeof DialogPrimitive.Cl
 interface AlertDialogActionProps extends DialogCloseProps {}
 
 const AlertDialogAction = React.forwardRef<AlertDialogActionElement, AlertDialogActionProps>(
-  (props, forwardedRef) => <DialogPrimitive.Close {...props} ref={forwardedRef} />
+  (props, forwardedRef) => {
+    const { __scope = ROOT_NAME, __part = ACTION_NAME, ...actionProps } = props;
+    return (
+      <DialogPrimitive.Close
+        {...actionProps}
+        __scope={__scope}
+        __part={__part}
+        ref={forwardedRef}
+      />
+    );
+  }
 );
 
 AlertDialogAction.displayName = ACTION_NAME;
@@ -175,9 +225,10 @@ interface AlertDialogCancelProps extends DialogCloseProps {}
 
 const AlertDialogCancel = React.forwardRef<AlertDialogCancelElement, AlertDialogCancelProps>(
   (props, forwardedRef) => {
-    const { cancelRef } = useAlertDialogContentContext(CANCEL_NAME);
+    const { __scope = ROOT_NAME, __part = CANCEL_NAME, ...cancelProps } = props;
+    const { cancelRef } = useAlertDialogContentContext(__part, __scope);
     const ref = useComposedRefs(forwardedRef, cancelRef);
-    return <DialogPrimitive.Close {...props} ref={ref} />;
+    return <DialogPrimitive.Close {...cancelProps} __scope={__scope} __part={__part} ref={ref} />;
   }
 );
 

@@ -10,7 +10,7 @@ import type * as Radix from '@radix-ui/react-primitive';
  * Avatar
  * -----------------------------------------------------------------------------------------------*/
 
-const AVATAR_NAME = 'Avatar';
+const ROOT_NAME = 'Avatar';
 
 type ImageLoadingStatus = 'idle' | 'loading' | 'loaded' | 'error';
 
@@ -19,25 +19,27 @@ type AvatarContextValue = {
   onImageLoadingStatusChange(status: ImageLoadingStatus): void;
 };
 
-const [AvatarProvider, useAvatarContext] = createContext<AvatarContextValue>(AVATAR_NAME);
+const [AvatarProvider, useAvatarContext] = createContext<AvatarContextValue>();
 
 type AvatarElement = React.ElementRef<typeof Primitive.span>;
 type PrimitiveSpanProps = Radix.ComponentPropsWithoutRef<typeof Primitive.span>;
 interface AvatarProps extends PrimitiveSpanProps {}
 
 const Avatar = React.forwardRef<AvatarElement, AvatarProps>((props, forwardedRef) => {
+  const { __scope = ROOT_NAME, __part = ROOT_NAME, ...avatarProps } = props;
   const [imageLoadingStatus, setImageLoadingStatus] = React.useState<ImageLoadingStatus>('idle');
   return (
     <AvatarProvider
+      scope={__scope}
       imageLoadingStatus={imageLoadingStatus}
       onImageLoadingStatusChange={setImageLoadingStatus}
     >
-      <Primitive.span {...props} ref={forwardedRef} />
+      <Primitive.span {...avatarProps} __scope={__scope} __part={__scope} ref={forwardedRef} />
     </AvatarProvider>
   );
 });
 
-Avatar.displayName = AVATAR_NAME;
+Avatar.displayName = ROOT_NAME;
 
 /* -------------------------------------------------------------------------------------------------
  * AvatarImage
@@ -53,8 +55,14 @@ interface AvatarImageProps extends PrimitiveImageProps {
 
 const AvatarImage = React.forwardRef<AvatarImageElement, AvatarImageProps>(
   (props, forwardedRef) => {
-    const { src, onLoadingStatusChange = () => {}, ...imageProps } = props;
-    const context = useAvatarContext(IMAGE_NAME);
+    const {
+      __scope = ROOT_NAME,
+      __part = IMAGE_NAME,
+      src,
+      onLoadingStatusChange = () => {},
+      ...imageProps
+    } = props;
+    const context = useAvatarContext(__scope, __part);
     const imageLoadingStatus = useImageLoadingStatus(src);
     const handleLoadingStatusChange = useCallbackRef((status: ImageLoadingStatus) => {
       onLoadingStatusChange(status);
@@ -68,7 +76,13 @@ const AvatarImage = React.forwardRef<AvatarImageElement, AvatarImageProps>(
     }, [imageLoadingStatus, handleLoadingStatusChange]);
 
     return imageLoadingStatus === 'loaded' ? (
-      <Primitive.img {...imageProps} ref={forwardedRef} src={src} />
+      <Primitive.img
+        {...imageProps}
+        ref={forwardedRef}
+        __scope={__scope}
+        __part={__scope}
+        src={src}
+      />
     ) : null;
   }
 );
@@ -88,8 +102,8 @@ interface AvatarFallbackProps extends PrimitiveSpanProps {
 
 const AvatarFallback = React.forwardRef<AvatarFallbackElement, AvatarFallbackProps>(
   (props, forwardedRef) => {
-    const { delayMs, ...fallbackProps } = props;
-    const context = useAvatarContext(FALLBACK_NAME);
+    const { __scope = ROOT_NAME, __part = FALLBACK_NAME, delayMs, ...fallbackProps } = props;
+    const context = useAvatarContext(__scope, __part);
     const [canRender, setCanRender] = React.useState(delayMs === undefined);
 
     React.useEffect(() => {
@@ -100,7 +114,7 @@ const AvatarFallback = React.forwardRef<AvatarFallbackElement, AvatarFallbackPro
     }, [delayMs]);
 
     return canRender && context.imageLoadingStatus !== 'loaded' ? (
-      <Primitive.span {...fallbackProps} ref={forwardedRef} />
+      <Primitive.span {...fallbackProps} __scope={__scope} __part={__scope} ref={forwardedRef} />
     ) : null;
   }
 );

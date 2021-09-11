@@ -9,7 +9,7 @@ import type * as Radix from '@radix-ui/react-primitive';
  * Toggle
  * -----------------------------------------------------------------------------------------------*/
 
-const NAME = 'Toggle';
+const ROOT_NAME = 'Toggle';
 
 type ToggleElement = React.ElementRef<typeof Primitive.button>;
 type PrimitiveButtonProps = Radix.ComponentPropsWithoutRef<typeof Primitive.button>;
@@ -31,7 +31,14 @@ interface ToggleProps extends PrimitiveButtonProps {
 }
 
 const Toggle = React.forwardRef<ToggleElement, ToggleProps>((props, forwardedRef) => {
-  const { pressed: pressedProp, defaultPressed = false, onPressedChange, ...buttonProps } = props;
+  const {
+    __scope = ROOT_NAME,
+    __part = ROOT_NAME,
+    pressed: pressedProp,
+    defaultPressed = false,
+    onPressedChange,
+    ...buttonProps
+  } = props;
 
   const [pressed = false, setPressed] = useControllableState({
     prop: pressedProp,
@@ -46,6 +53,8 @@ const Toggle = React.forwardRef<ToggleElement, ToggleProps>((props, forwardedRef
       data-state={pressed ? 'on' : 'off'}
       data-disabled={props.disabled ? '' : undefined}
       {...buttonProps}
+      __scope={__scope}
+      __part={__part}
       ref={forwardedRef}
       onClick={composeEventHandlers(props.onClick, () => {
         if (!props.disabled) {
@@ -56,7 +65,7 @@ const Toggle = React.forwardRef<ToggleElement, ToggleProps>((props, forwardedRef
   );
 });
 
-Toggle.displayName = NAME;
+Toggle.displayName = ROOT_NAME;
 
 /* ---------------------------------------------------------------------------------------------- */
 

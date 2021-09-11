@@ -10,11 +10,11 @@ import type * as Radix from '@radix-ui/react-primitive';
  * Label
  * -----------------------------------------------------------------------------------------------*/
 
-const NAME = 'Label';
+const ROOT_NAME = 'Label';
 
 type LabelContextValue = { id: string; labelRef: React.RefObject<HTMLSpanElement> };
 
-const [LabelProvider, useLabelContextImpl] = createContext<LabelContextValue | null>(NAME, null);
+const [LabelProvider, useLabelContextImpl] = createContext<LabelContextValue | null>(null);
 
 type LabelElement = React.ElementRef<typeof Primitive.span>;
 type PrimitiveSpanProps = Radix.ComponentPropsWithoutRef<typeof Primitive.span>;
@@ -23,7 +23,7 @@ interface LabelProps extends PrimitiveSpanProps {
 }
 
 const Label = React.forwardRef<LabelElement, LabelProps>((props, forwardedRef) => {
-  const { htmlFor, id: idProp, ...labelProps } = props;
+  const { __scope = ROOT_NAME, __part = ROOT_NAME, htmlFor, id: idProp, ...labelProps } = props;
   const labelRef = React.useRef<HTMLSpanElement>(null);
   const ref = useComposedRefs(forwardedRef, labelRef);
   const id = useId(idProp);
@@ -71,18 +71,25 @@ const Label = React.forwardRef<LabelElement, LabelProps>((props, forwardedRef) =
   }, [id, htmlFor]);
 
   return (
-    <LabelProvider id={id} labelRef={labelRef}>
-      <Primitive.span role="label" id={id} {...labelProps} ref={ref} />
+    <LabelProvider scope={__scope} id={id} labelRef={labelRef}>
+      <Primitive.span
+        role="label"
+        id={id}
+        {...labelProps}
+        __scope={__scope}
+        __part={__part}
+        ref={ref}
+      />
     </LabelProvider>
   );
 });
 
-Label.displayName = NAME;
+Label.displayName = ROOT_NAME;
 
 /* -----------------------------------------------------------------------------------------------*/
 
 const useLabelContext = (element?: HTMLElement | null) => {
-  const context = useLabelContextImpl('LabelConsumer');
+  const context = useLabelContextImpl(ROOT_NAME, 'LabelConsumer');
 
   React.useEffect(() => {
     if (context === null) return;

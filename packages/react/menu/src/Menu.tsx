@@ -38,7 +38,7 @@ const SUB_CLOSE_KEYS: Record<Direction, string[]> = {
  * Menu
  * -----------------------------------------------------------------------------------------------*/
 
-const MENU_NAME = 'Menu';
+const ROOT_NAME = 'Menu';
 
 type MenuRootContextValue = {
   isSubmenu: false;
@@ -60,11 +60,9 @@ type MenuSubContextValue = Omit<MenuRootContextValue, 'isSubmenu'> & {
   onTriggerChange(trigger: MenuSubTriggerElement | null): void;
 };
 
-const [MenuProvider, useMenuContext] = createContext<MenuRootContextValue | MenuSubContextValue>(
-  MENU_NAME
-);
+const [MenuProvider, useMenuContext] = createContext<MenuRootContextValue | MenuSubContextValue>();
 
-interface MenuProps {
+interface MenuProps extends Radix.PrimitivePrivateProps {
   open?: boolean;
   onOpenChange?(open: boolean): void;
   dir?: Direction;
@@ -72,7 +70,14 @@ interface MenuProps {
 }
 
 const Menu: React.FC<MenuProps> = (props) => {
-  const { open = false, children, onOpenChange, modal = true } = props;
+  const {
+    __scope = ROOT_NAME,
+    __part = ROOT_NAME,
+    open = false,
+    children,
+    onOpenChange,
+    modal = true,
+  } = props;
   const [content, setContent] = React.useState<MenuContentElement | null>(null);
   const isUsingKeyboardRef = React.useRef(false);
   const handleOpenChange = useCallbackRef(onOpenChange);
@@ -94,8 +99,9 @@ const Menu: React.FC<MenuProps> = (props) => {
   }, []);
 
   return (
-    <PopperPrimitive.Root>
+    <PopperPrimitive.Root __scope={__scope} __part={__part}>
       <MenuProvider
+        scope={__scope}
         isSubmenu={false}
         isUsingKeyboardRef={isUsingKeyboardRef}
         dir={computedDirection}
@@ -112,20 +118,20 @@ const Menu: React.FC<MenuProps> = (props) => {
   );
 };
 
-Menu.displayName = MENU_NAME;
+Menu.displayName = ROOT_NAME;
 
 /* ---------------------------------------------------------------------------------------------- */
 
 const SUB_NAME = 'MenuSub';
 
-interface MenuSubProps {
+interface MenuSubProps extends Radix.PrimitivePrivateProps {
   open?: boolean;
   onOpenChange?(open: boolean): void;
 }
 
 const MenuSub: React.FC<MenuSubProps> = (props) => {
-  const { children, open = false, onOpenChange } = props;
-  const parentMenuContext = useMenuContext(SUB_NAME);
+  const { __scope = ROOT_NAME, __part = SUB_NAME, children, open = false, onOpenChange } = props;
+  const parentMenuContext = useMenuContext(__scope, __part);
   const [trigger, setTrigger] = React.useState<MenuSubTriggerElement | null>(null);
   const [content, setContent] = React.useState<MenuContentElement | null>(null);
   const handleOpenChange = useCallbackRef(onOpenChange);
@@ -137,8 +143,9 @@ const MenuSub: React.FC<MenuSubProps> = (props) => {
   }, [parentMenuContext.open, handleOpenChange]);
 
   return (
-    <PopperPrimitive.Root>
+    <PopperPrimitive.Root __scope={__scope} __part={__part}>
       <MenuProvider
+        scope={__scope}
         isSubmenu={true}
         isUsingKeyboardRef={parentMenuContext.isUsingKeyboardRef}
         dir={parentMenuContext.dir}
@@ -171,9 +178,10 @@ type MenuAnchorElement = React.ElementRef<typeof PopperPrimitive.Anchor>;
 type PopperAnchorProps = Radix.ComponentPropsWithoutRef<typeof PopperPrimitive.Anchor>;
 interface MenuAnchorProps extends PopperAnchorProps {}
 
-const MenuAnchor = React.forwardRef<MenuAnchorElement, MenuAnchorProps>((props, forwardedRef) => (
-  <PopperPrimitive.Anchor {...props} ref={forwardedRef} />
-));
+const MenuAnchor = React.forwardRef<MenuAnchorElement, MenuAnchorProps>((props, forwardedRef) => {
+  const { __scope = ROOT_NAME, __part = ANCHOR_NAME } = props;
+  return <PopperPrimitive.Anchor {...props} __scope={__scope} __part={__part} ref={forwardedRef} />;
+});
 
 MenuAnchor.displayName = ANCHOR_NAME;
 
@@ -198,8 +206,7 @@ type MenuContentContextValue = {
   pointerGraceTimerRef: React.MutableRefObject<number>;
   onPointerGraceIntentChange(intent: GraceIntent | null): void;
 };
-const [MenuContentProvider, useMenuContentContext] =
-  createContext<MenuContentContextValue>(CONTENT_NAME);
+const [MenuContentProvider, useMenuContentContext] = createContext<MenuContentContextValue>();
 
 type MenuContentElement = MenuRootContentElement | MenuSubContentElement;
 /**
@@ -217,16 +224,17 @@ interface MenuContentProps extends MenuRootContentProps {
 
 const MenuContent = React.forwardRef<MenuContentElement, MenuContentProps>(
   (props, forwardedRef) => {
-    const { forceMount, ...contentProps } = props;
-    const context = useMenuContext(CONTENT_NAME);
+    const { __scope = ROOT_NAME, __part = CONTENT_NAME, forceMount, ...contentProps } = props;
+    const context = useMenuContext(__scope, __part);
+    const commonProps = { ...contentProps, __scope, __part };
     return (
-      <CollectionProvider>
+      <CollectionProvider scope={__scope}>
         <Presence present={forceMount || context.open}>
-          <CollectionSlot>
+          <CollectionSlot __scope={__scope} __part={__part}>
             {context.isSubmenu ? (
-              <MenuSubContent {...contentProps} ref={forwardedRef} />
+              <MenuSubContent {...commonProps} ref={forwardedRef} />
             ) : (
-              <MenuRootContent {...contentProps} ref={forwardedRef} />
+              <MenuRootContent {...commonProps} ref={forwardedRef} />
             )}
           </CollectionSlot>
         </Presence>
@@ -243,11 +251,13 @@ interface MenuRootContentProps
 
 const MenuRootContent = React.forwardRef<MenuRootContentElement, MenuRootContentProps>(
   (props, forwardedRef) => {
-    const context = useMenuContext(CONTENT_NAME);
+    const { __scope = ROOT_NAME, __part = CONTENT_NAME, ...contentProps } = props;
+    const context = useMenuContext(__scope, __part);
+    const commonProps = { ...contentProps, __scope, __part };
     return context.modal ? (
-      <MenuRootContentModal {...props} ref={forwardedRef} />
+      <MenuRootContentModal {...commonProps} ref={forwardedRef} />
     ) : (
-      <MenuRootContentNonModal {...props} ref={forwardedRef} />
+      <MenuRootContentNonModal {...commonProps} ref={forwardedRef} />
     );
   }
 );
@@ -261,7 +271,8 @@ interface MenuRootContentTypeProps
 
 const MenuRootContentModal = React.forwardRef<MenuRootContentTypeElement, MenuRootContentTypeProps>(
   (props, forwardedRef) => {
-    const context = useMenuContext(CONTENT_NAME);
+    const { __scope = ROOT_NAME, __part = CONTENT_NAME, ...contentProps } = props;
+    const context = useMenuContext(__scope, __part);
     const ref = React.useRef<MenuRootContentTypeElement>(null);
     const composedRefs = useComposedRefs(forwardedRef, ref);
 
@@ -273,7 +284,9 @@ const MenuRootContentModal = React.forwardRef<MenuRootContentTypeElement, MenuRo
 
     return (
       <MenuContentImpl
-        {...props}
+        {...contentProps}
+        __scope={__scope}
+        __part={__part}
         ref={composedRefs}
         // we make sure we're not trapping once it's been closed
         // (closed !== unmounted when animating out)
@@ -299,10 +312,13 @@ const MenuRootContentNonModal = React.forwardRef<
   MenuRootContentTypeElement,
   MenuRootContentTypeProps
 >((props, forwardedRef) => {
-  const context = useMenuContext(CONTENT_NAME);
+  const { __scope = ROOT_NAME, __part = CONTENT_NAME, ...contentProps } = props;
+  const context = useMenuContext(__scope, __part);
   return (
     <MenuContentImpl
-      {...props}
+      {...contentProps}
+      __scope={__scope}
+      __part={__part}
       ref={forwardedRef}
       trapFocus={false}
       disableOutsidePointerEvents={false}
@@ -330,14 +346,17 @@ interface MenuSubContentProps
 
 const MenuSubContent = React.forwardRef<MenuSubContentElement, MenuSubContentProps>(
   (props, forwardedRef) => {
-    const context = useMenuContext(CONTENT_NAME);
+    const { __scope = ROOT_NAME, __part = CONTENT_NAME, ...contentProps } = props;
+    const context = useMenuContext(__scope, __part);
     const ref = React.useRef<MenuSubContentElement>(null);
     const composedRefs = useComposedRefs(forwardedRef, ref);
     return context.isSubmenu ? (
       <MenuContentImpl
         id={context.contentId}
         aria-labelledby={context.triggerId}
-        {...props}
+        {...contentProps}
+        __scope={__scope}
+        __part={__part}
         ref={composedRefs}
         align="start"
         side={context.dir === 'rtl' ? 'left' : 'right'}
@@ -429,6 +448,8 @@ interface MenuContentImplProps
 const MenuContentImpl = React.forwardRef<MenuContentImplElement, MenuContentImplProps>(
   (props, forwardedRef) => {
     const {
+      __scope = ROOT_NAME,
+      __part = CONTENT_NAME,
       loop = false,
       trapFocus,
       onOpenAutoFocus,
@@ -443,8 +464,8 @@ const MenuContentImpl = React.forwardRef<MenuContentImplElement, MenuContentImpl
       portalled,
       ...contentProps
     } = props;
-    const context = useMenuContext(CONTENT_NAME);
-    const { getItems } = useCollection();
+    const context = useMenuContext(__scope, __part);
+    const { getItems } = useCollection(__scope, __part);
     const [currentItemId, setCurrentItemId] = React.useState<string | null>(null);
     const contentRef = React.useRef<HTMLDivElement>(null);
     const composedRefs = useComposedRefs(forwardedRef, contentRef, context.onContentChange);
@@ -497,9 +518,10 @@ const MenuContentImpl = React.forwardRef<MenuContentImplElement, MenuContentImpl
     }, []);
 
     return (
-      <PortalWrapper>
+      <PortalWrapper __scope={__scope} __part={__part}>
         <ScrollLockWrapper>
           <MenuContentProvider
+            scope={__scope}
             searchRef={searchRef}
             onItemEnter={React.useCallback(
               (event) => {
@@ -526,25 +548,27 @@ const MenuContentImpl = React.forwardRef<MenuContentImplElement, MenuContentImpl
               pointerGraceIntentRef.current = intent;
             }, [])}
           >
-            <FocusScope
+            <DismissableLayer
               asChild
-              trapped={trapFocus}
-              onMountAutoFocus={composeEventHandlers(onOpenAutoFocus, (event) => {
-                // when opening, explicitly focus the content area only and leave
-                // `onEntryFocus` in  control of focusing first item
-                event.preventDefault();
-                contentRef.current?.focus();
-              })}
-              onUnmountAutoFocus={onCloseAutoFocus}
+              __part={__part}
+              disableOutsidePointerEvents={disableOutsidePointerEvents}
+              onEscapeKeyDown={onEscapeKeyDown}
+              onPointerDownOutside={onPointerDownOutside}
+              onFocusOutside={onFocusOutside}
+              onInteractOutside={onInteractOutside}
+              onDismiss={onDismiss}
             >
-              <DismissableLayer
+              <FocusScope
                 asChild
-                disableOutsidePointerEvents={disableOutsidePointerEvents}
-                onEscapeKeyDown={onEscapeKeyDown}
-                onPointerDownOutside={onPointerDownOutside}
-                onFocusOutside={onFocusOutside}
-                onInteractOutside={onInteractOutside}
-                onDismiss={onDismiss}
+                __scope={__scope}
+                trapped={trapFocus}
+                onMountAutoFocus={composeEventHandlers(onOpenAutoFocus, (event) => {
+                  // when opening, explicitly focus the content area only and leave
+                  // `onEntryFocus` in  control of focusing first item
+                  event.preventDefault();
+                  contentRef.current?.focus();
+                })}
+                onUnmountAutoFocus={onCloseAutoFocus}
               >
                 <RovingFocusGroup
                   asChild
@@ -609,8 +633,8 @@ const MenuContentImpl = React.forwardRef<MenuContentImplElement, MenuContentImpl
                     )}
                   />
                 </RovingFocusGroup>
-              </DismissableLayer>
-            </FocusScope>
+              </FocusScope>
+            </DismissableLayer>
           </MenuContentProvider>
         </ScrollLockWrapper>
       </PortalWrapper>
@@ -630,9 +654,18 @@ type MenuGroupElement = React.ElementRef<typeof Primitive.div>;
 type PrimitiveDivProps = Radix.ComponentPropsWithoutRef<typeof Primitive.div>;
 interface MenuGroupProps extends PrimitiveDivProps {}
 
-const MenuGroup = React.forwardRef<MenuGroupElement, MenuGroupProps>((props, forwardedRef) => (
-  <Primitive.div role="group" {...props} ref={forwardedRef} />
-));
+const MenuGroup = React.forwardRef<MenuGroupElement, MenuGroupProps>((props, forwardedRef) => {
+  const { __scope = ROOT_NAME, __part = GROUP_NAME, ...groupProps } = props;
+  return (
+    <Primitive.div
+      role="group"
+      {...groupProps}
+      __scope={__scope}
+      __part={__part}
+      ref={forwardedRef}
+    />
+  );
+});
 
 MenuGroup.displayName = GROUP_NAME;
 
@@ -645,9 +678,10 @@ const LABEL_NAME = 'MenuLabel';
 type MenuLabelElement = React.ElementRef<typeof Primitive.div>;
 interface MenuLabelProps extends PrimitiveDivProps {}
 
-const MenuLabel = React.forwardRef<MenuLabelElement, MenuLabelProps>((props, forwardedRef) => (
-  <Primitive.div {...props} ref={forwardedRef} />
-));
+const MenuLabel = React.forwardRef<MenuLabelElement, MenuLabelProps>((props, forwardedRef) => {
+  const { __scope = ROOT_NAME, __part = LABEL_NAME, ...labelProps } = props;
+  return <Primitive.div {...labelProps} __scope={__scope} __part={__part} ref={forwardedRef} />;
+});
 
 MenuLabel.displayName = LABEL_NAME;
 
@@ -664,10 +698,16 @@ interface MenuItemProps extends Omit<MenuItemImplProps, 'onSelect'> {
 }
 
 const MenuItem = React.forwardRef<MenuItemElement, MenuItemProps>((props, forwardedRef) => {
-  const { disabled = false, onSelect, ...itemProps } = props;
+  const {
+    __scope = ROOT_NAME,
+    __part = ITEM_NAME,
+    disabled = false,
+    onSelect,
+    ...itemProps
+  } = props;
   const ref = React.useRef<HTMLDivElement>(null);
-  const context = useMenuContext(ITEM_NAME);
-  const contentContext = useMenuContentContext(ITEM_NAME);
+  const context = useMenuContext(__scope, __part);
+  const contentContext = useMenuContentContext(__scope, __part);
   const composedRefs = useComposedRefs(forwardedRef, ref);
   const isPointerDownRef = React.useRef(false);
 
@@ -688,6 +728,8 @@ const MenuItem = React.forwardRef<MenuItemElement, MenuItemProps>((props, forwar
   return (
     <MenuItemImpl
       {...itemProps}
+      __scope={__scope}
+      __part={__part}
       ref={composedRefs}
       disabled={disabled}
       onClick={composeEventHandlers(props.onClick, handleSelect)}
@@ -732,8 +774,9 @@ interface MenuSubTriggerProps extends MenuItemImplProps {}
 
 const MenuSubTrigger = React.forwardRef<MenuSubTriggerElement, MenuSubTriggerProps>(
   (props, forwardedRef) => {
-    const context = useMenuContext(SUB_TRIGGER_NAME);
-    const contentContext = useMenuContentContext(SUB_TRIGGER_NAME);
+    const { __scope = ROOT_NAME, __part = SUB_TRIGGER_NAME, ...subTriggerProps } = props;
+    const context = useMenuContext(__scope, __part);
+    const contentContext = useMenuContentContext(__scope, __part);
     const openTimerRef = React.useRef<number | null>(null);
     const { pointerGraceTimerRef, onPointerGraceIntentChange } = contentContext;
 
@@ -753,14 +796,14 @@ const MenuSubTrigger = React.forwardRef<MenuSubTriggerElement, MenuSubTriggerPro
     }, [pointerGraceTimerRef, onPointerGraceIntentChange]);
 
     return context.isSubmenu ? (
-      <MenuAnchor asChild>
+      <MenuAnchor asChild __scope={__scope} __part={__part}>
         <MenuItemImpl
           id={context.triggerId}
           aria-haspopup="menu"
           aria-expanded={context.open}
           aria-controls={context.contentId}
           data-state={getOpenState(context.open)}
-          {...props}
+          {...subTriggerProps}
           ref={composeRefs(forwardedRef, context.onTriggerChange)}
           // This is redundant for mouse users but we cannot determine pointer type from
           // click event and we cannot use pointerup event (see git history for reasons why)
@@ -858,10 +901,16 @@ interface MenuItemImplProps extends PrimitiveDivProps {
 
 const MenuItemImpl = React.forwardRef<MenuItemImplElement, MenuItemImplProps>(
   (props, forwardedRef) => {
-    const { disabled = false, textValue, ...itemProps } = props;
+    const {
+      __scope = ROOT_NAME,
+      __part = ITEM_NAME,
+      disabled = false,
+      textValue,
+      ...itemProps
+    } = props;
     const ref = React.useRef<HTMLDivElement>(null);
     const composedRefs = useComposedRefs(forwardedRef, ref);
-    const contentContext = useMenuContentContext(ITEM_NAME);
+    const contentContext = useMenuContentContext(__scope, __part);
 
     // get the item's `.textContent` as default strategy for typeahead `textValue`
     const [textContent, setTextContent] = React.useState('');
@@ -873,8 +922,13 @@ const MenuItemImpl = React.forwardRef<MenuItemImplElement, MenuItemImplProps>(
     }, [itemProps.children]);
 
     return (
-      <CollectionItemSlot disabled={disabled} textValue={textValue ?? textContent}>
-        <RovingFocusItem asChild focusable={!disabled}>
+      <CollectionItemSlot
+        __scope={__scope}
+        __part={__part}
+        disabled={disabled}
+        textValue={textValue ?? textContent}
+      >
+        <RovingFocusItem asChild __scope={__scope} __part={__part} focusable={!disabled}>
           <Primitive.div
             role="menuitem"
             aria-disabled={disabled || undefined}
@@ -931,13 +985,21 @@ interface MenuCheckboxItemProps extends MenuItemProps {
 
 const MenuCheckboxItem = React.forwardRef<MenuCheckboxItemElement, MenuCheckboxItemProps>(
   (props, forwardedRef) => {
-    const { checked = false, onCheckedChange, ...checkboxItemProps } = props;
+    const {
+      __scope = ROOT_NAME,
+      __part = CHECKBOX_ITEM_NAME,
+      checked = false,
+      onCheckedChange,
+      ...checkboxItemProps
+    } = props;
     return (
-      <ItemIndicatorProvider checked={checked}>
+      <ItemIndicatorProvider scope={__scope} checked={checked}>
         <MenuItem
           role="menuitemcheckbox"
           aria-checked={checked}
           {...checkboxItemProps}
+          __scope={__scope}
+          __part={__part}
           ref={forwardedRef}
           data-state={getCheckedState(checked)}
           onSelect={composeEventHandlers(
@@ -959,10 +1021,10 @@ MenuCheckboxItem.displayName = CHECKBOX_ITEM_NAME;
 
 const RADIO_GROUP_NAME = 'MenuRadioGroup';
 
-const [RadioGroupProvider, useRadioGroupContext] = createContext<MenuRadioGroupProps>(
-  RADIO_GROUP_NAME,
-  { value: undefined, onValueChange: () => {} }
-);
+const [RadioGroupProvider, useRadioGroupContext] = createContext<MenuRadioGroupProps>({
+  value: undefined,
+  onValueChange: () => {},
+});
 
 type MenuRadioGroupElement = React.ElementRef<typeof MenuGroup>;
 interface MenuRadioGroupProps extends MenuGroupProps {
@@ -972,11 +1034,17 @@ interface MenuRadioGroupProps extends MenuGroupProps {
 
 const MenuRadioGroup = React.forwardRef<MenuRadioGroupElement, MenuRadioGroupProps>(
   (props, forwardedRef) => {
-    const { value, onValueChange, ...groupProps } = props;
+    const {
+      __scope = ROOT_NAME,
+      __part = RADIO_GROUP_NAME,
+      value,
+      onValueChange,
+      ...groupProps
+    } = props;
     const handleValueChange = useCallbackRef(onValueChange);
     return (
-      <RadioGroupProvider value={value} onValueChange={handleValueChange}>
-        <MenuGroup {...groupProps} ref={forwardedRef} />
+      <RadioGroupProvider scope={__scope} value={value} onValueChange={handleValueChange}>
+        <MenuGroup {...groupProps} __scope={__scope} __part={__part} ref={forwardedRef} />
       </RadioGroupProvider>
     );
   }
@@ -997,8 +1065,8 @@ interface MenuRadioItemProps extends MenuItemProps {
 
 const MenuRadioItem = React.forwardRef<MenuRadioItemElement, MenuRadioItemProps>(
   (props, forwardedRef) => {
-    const { value, ...radioItemProps } = props;
-    const context = useRadioGroupContext(RADIO_ITEM_NAME);
+    const { __scope = ROOT_NAME, __part = RADIO_ITEM_NAME, value, ...radioItemProps } = props;
+    const context = useRadioGroupContext(__scope, __part);
     const checked = value === context.value;
     return (
       <ItemIndicatorProvider checked={checked}>
@@ -1006,6 +1074,8 @@ const MenuRadioItem = React.forwardRef<MenuRadioItemElement, MenuRadioItemProps>
           role="menuitemradio"
           aria-checked={checked}
           {...radioItemProps}
+          __scope={__scope}
+          __part={__part}
           ref={forwardedRef}
           data-state={getCheckedState(checked)}
           onSelect={composeEventHandlers(
@@ -1027,7 +1097,7 @@ MenuRadioItem.displayName = RADIO_ITEM_NAME;
 
 const ITEM_INDICATOR_NAME = 'MenuItemIndicator';
 
-const [ItemIndicatorProvider, useItemIndicatorContext] = createContext(ITEM_INDICATOR_NAME, {
+const [ItemIndicatorProvider, useItemIndicatorContext] = createContext({
   checked: false,
 });
 
@@ -1043,12 +1113,19 @@ interface MenuItemIndicatorProps extends PrimitiveSpanProps {
 
 const MenuItemIndicator = React.forwardRef<MenuItemIndicatorElement, MenuItemIndicatorProps>(
   (props, forwardedRef) => {
-    const { forceMount, ...indicatorProps } = props;
-    const indicatorContext = useItemIndicatorContext(ITEM_INDICATOR_NAME);
+    const {
+      __scope = ROOT_NAME,
+      __part = ITEM_INDICATOR_NAME,
+      forceMount,
+      ...indicatorProps
+    } = props;
+    const indicatorContext = useItemIndicatorContext(__scope, __part);
     return (
       <Presence present={forceMount || indicatorContext.checked}>
         <Primitive.span
           {...indicatorProps}
+          __scope={__scope}
+          __part={__part}
           ref={forwardedRef}
           data-state={getCheckedState(indicatorContext.checked)}
         />
@@ -1069,9 +1146,19 @@ type MenuSeparatorElement = React.ElementRef<typeof Primitive.div>;
 interface MenuSeparatorProps extends PrimitiveDivProps {}
 
 const MenuSeparator = React.forwardRef<MenuSeparatorElement, MenuSeparatorProps>(
-  (props, forwardedRef) => (
-    <Primitive.div role="separator" aria-orientation="horizontal" {...props} ref={forwardedRef} />
-  )
+  (props, forwardedRef) => {
+    const { __scope = ROOT_NAME, __part = SEPARATOR_NAME, ...separatorProps } = props;
+    return (
+      <Primitive.div
+        role="separator"
+        aria-orientation="horizontal"
+        {...separatorProps}
+        ref={forwardedRef}
+        __scope={__scope}
+        __part={__part}
+      />
+    );
+  }
 );
 
 MenuSeparator.displayName = SEPARATOR_NAME;
@@ -1086,9 +1173,12 @@ type MenuArrowElement = React.ElementRef<typeof PopperPrimitive.Arrow>;
 type PopperArrowProps = Radix.ComponentPropsWithoutRef<typeof PopperPrimitive.Arrow>;
 interface MenuArrowProps extends PopperArrowProps {}
 
-const MenuArrow = React.forwardRef<MenuArrowElement, MenuArrowProps>((props, forwardedRef) => (
-  <PopperPrimitive.Arrow {...props} ref={forwardedRef} />
-));
+const MenuArrow = React.forwardRef<MenuArrowElement, MenuArrowProps>((props, forwardedRef) => {
+  const { __scope = ROOT_NAME, __part = ARROW_NAME, ...arrowProps } = props;
+  return (
+    <PopperPrimitive.Arrow {...arrowProps} __scope={__scope} __part={__part} ref={forwardedRef} />
+  );
+});
 
 MenuArrow.displayName = ARROW_NAME;
 

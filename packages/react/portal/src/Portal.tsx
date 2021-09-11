@@ -11,7 +11,7 @@ const MAX_Z_INDEX = 2147483647;
  * Portal
  * -----------------------------------------------------------------------------------------------*/
 
-const PORTAL_NAME = 'Portal';
+const ROOT_NAME = 'Portal';
 
 type PortalElement = React.ElementRef<typeof Primitive.div>;
 type PrimitiveDivProps = Radix.ComponentPropsWithoutRef<typeof Primitive.div>;
@@ -20,7 +20,7 @@ interface PortalProps extends PrimitiveDivProps {
 }
 
 const Portal = React.forwardRef<PortalElement, PortalProps>((props, forwardedRef) => {
-  const { containerRef, style, ...portalProps } = props;
+  const { __scope = ROOT_NAME, __part = ROOT_NAME, containerRef, style, ...portalProps } = props;
   const hostElement = containerRef?.current ?? globalThis?.document?.body;
   const [, forceUpdate] = React.useState({});
 
@@ -35,7 +35,9 @@ const Portal = React.forwardRef<PortalElement, PortalProps>((props, forwardedRef
   if (hostElement) {
     return ReactDOM.createPortal(
       <Primitive.div
-        data-radix-portal=""
+        data-radix-portal={__part}
+        __scope={__scope}
+        __part={__part}
         {...portalProps}
         ref={forwardedRef}
         style={
@@ -64,7 +66,7 @@ const Portal = React.forwardRef<PortalElement, PortalProps>((props, forwardedRef
   return null;
 });
 
-Portal.displayName = PORTAL_NAME;
+Portal.displayName = ROOT_NAME;
 
 /* -----------------------------------------------------------------------------------------------*/
 

@@ -1,32 +1,51 @@
 import * as React from 'react';
 
-function createContext<ContextValueType extends object | null>(
-  groupName: string,
-  defaultContext?: ContextValueType
-) {
-  const Context = React.createContext<ContextValueType>(defaultContext as any);
+interface ProviderProps {
+  scope?: string;
+  children: React.ReactNode;
+}
 
-  function Provider(props: ContextValueType & { children: React.ReactNode }) {
-    const { children, ...providerProps } = props;
-    // Only re-memoize when prop values change
+type ContextValue<T> = {
+  value: T;
+  scope: string;
+  parentContext?: ContextValue<T>;
+};
+
+function createContext<T extends object | null>(defaultContext?: T) {
+  const Context = React.createContext<ContextValue<T>>(defaultContext as any);
+
+  function Provider(props: T & ProviderProps) {
+    const { scope, children, ...providerProps } = props;
+    const propValues = Object.values(providerProps);
+    const parentContext = React.useContext(Context);
     const value = React.useMemo(
-      () => providerProps,
+      () => ({ value: providerProps, scope: scope, parentContext }),
+      // we spread prop values so that it's not a new object on every render
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      Object.values(providerProps)
-    ) as ContextValueType;
+      [...propValues, scope, parentContext]
+    ) as ContextValue<T>;
     return <Context.Provider value={value}>{children}</Context.Provider>;
   }
 
-  function useContext(partName: string) {
-    const context = React.useContext(Context);
-    if (defaultContext === undefined && context === undefined) {
-      throw new Error(`\`${partName}\` must be used within \`${groupName}\``);
+  function useContext(part: string, scope: string): T {
+    const currentContext = React.useContext(Context);
+    const context = (function getContext(context?: ContextValue<T>): T | undefined {
+      if (!context) return currentContext.value;
+      return context.scope === scope ? context.value : getContext(context.parentContext);
+    })(currentContext);
+
+    if (context === undefined) {
+      // if there is no defaultContext it was a required context so we error.
+      if (defaultContext === undefined) {
+        throw new Error(`\`${part}\` must be used within \`${scope}\``);
+      }
+      return defaultContext;
     }
     return context;
   }
-
-  Provider.displayName = groupName + 'Provider';
+  Provider.displayName = 'Provider';
   return [Provider, useContext] as const;
 }
 
 export { createContext };
+export type { ProviderProps };

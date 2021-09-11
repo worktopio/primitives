@@ -24,7 +24,7 @@ type TabsContextValue = {
   activationMode?: TabsProps['activationMode'];
 };
 
-const [TabsProvider, useTabsContext] = createContext<TabsContextValue>(TABS_NAME);
+const [TabsProvider, useTabsContext] = createContext<TabsContextValue>();
 
 type TabsElement = React.ElementRef<typeof Primitive.div>;
 type RovingFocusGroupProps = Radix.ComponentPropsWithoutRef<typeof RovingFocusGroup>;

@@ -22,8 +22,7 @@ type RadioGroupContextValue = {
   onValueChange(value: string): void;
 };
 
-const [RadioGroupProvider, useRadioGroupContext] =
-  createContext<RadioGroupContextValue>(RADIO_GROUP_NAME);
+const [RadioGroupProvider, useRadioGroupContext] = createContext<RadioGroupContextValue>();
 
 type RadioGroupElement = React.ElementRef<typeof Primitive.div>;
 type RovingFocusGroupProps = Radix.ComponentPropsWithoutRef<typeof RovingFocusGroup>;

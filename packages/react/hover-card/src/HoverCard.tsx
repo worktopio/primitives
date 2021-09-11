@@ -12,7 +12,7 @@ import type * as Radix from '@radix-ui/react-primitive';
  * HoverCard
  * -----------------------------------------------------------------------------------------------*/
 
-const HOVERCARD_NAME = 'HoverCard';
+const ROOT_NAME = 'HoverCard';
 
 type HoverCardContextValue = {
   open: boolean;
@@ -21,10 +21,9 @@ type HoverCardContextValue = {
   onClose(): void;
 };
 
-const [HoverCardProvider, useHoverCardContext] =
-  createContext<HoverCardContextValue>(HOVERCARD_NAME);
+const [HoverCardProvider, useHoverCardContext] = createContext<HoverCardContextValue>();
 
-interface HoverCardProps {
+interface HoverCardProps extends Radix.PrimitivePrivateProps {
   open?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -34,6 +33,8 @@ interface HoverCardProps {
 
 const HoverCard: React.FC<HoverCardProps> = (props) => {
   const {
+    __scope = ROOT_NAME,
+    __part = ROOT_NAME,
     children,
     open: openProp,
     defaultOpen,
@@ -69,13 +70,21 @@ const HoverCard: React.FC<HoverCardProps> = (props) => {
   }, []);
 
   return (
-    <HoverCardProvider open={open} onOpenChange={setOpen} onOpen={handleOpen} onClose={handleClose}>
-      <PopperPrimitive.Root>{children}</PopperPrimitive.Root>
+    <HoverCardProvider
+      scope={__scope}
+      open={open}
+      onOpenChange={setOpen}
+      onOpen={handleOpen}
+      onClose={handleClose}
+    >
+      <PopperPrimitive.Root __scope={__scope} __part={__part}>
+        {children}
+      </PopperPrimitive.Root>
     </HoverCardProvider>
   );
 };
 
-HoverCard.displayName = HOVERCARD_NAME;
+HoverCard.displayName = ROOT_NAME;
 
 /* -------------------------------------------------------------------------------------------------
  * HoverCardTrigger
@@ -89,12 +98,13 @@ interface HoverCardTriggerProps extends PrimitiveLinkProps {}
 
 const HoverCardTrigger = React.forwardRef<HoverCardTriggerElement, HoverCardTriggerProps>(
   (props, forwardedRef) => {
-    const context = useHoverCardContext(TRIGGER_NAME);
+    const { __scope = ROOT_NAME, __part = TRIGGER_NAME, ...triggerProps } = props;
+    const context = useHoverCardContext(__scope, __part);
     return (
-      <PopperPrimitive.Anchor asChild>
+      <PopperPrimitive.Anchor asChild __scope={__scope} __part={__part}>
         <Primitive.a
           data-state={context.open ? 'open' : 'closed'}
-          {...props}
+          {...triggerProps}
           ref={forwardedRef}
           onPointerEnter={composeEventHandlers(props.onPointerEnter, excludeTouch(context.onOpen))}
           onPointerLeave={composeEventHandlers(props.onPointerLeave, excludeTouch(context.onClose))}
@@ -123,16 +133,18 @@ interface HoverCardContentProps extends HoverCardContentImplProps {
 
 const HoverCardContent = React.forwardRef<HoverCardContentElement, HoverCardContentProps>(
   (props, forwardedRef) => {
-    const { forceMount, ...contentProps } = props;
-    const context = useHoverCardContext(CONTENT_NAME);
+    const { __scope = ROOT_NAME, __part = CONTENT_NAME, forceMount, ...contentProps } = props;
+    const context = useHoverCardContext(__scope, __part);
     return (
       <Presence present={forceMount || context.open}>
         <HoverCardContentImpl
           data-state={context.open ? 'open' : 'closed'}
           {...contentProps}
+          __scope={__scope}
+          __part={__part}
+          ref={forwardedRef}
           onPointerEnter={composeEventHandlers(props.onMouseEnter, excludeTouch(context.onOpen))}
           onPointerLeave={composeEventHandlers(props.onMouseLeave, excludeTouch(context.onClose))}
-          ref={forwardedRef}
         />
       </Presence>
     );
@@ -157,12 +169,14 @@ const HoverCardContentImpl = React.forwardRef<
   HoverCardContentImplElement,
   HoverCardContentImplProps
 >((props, forwardedRef) => {
-  const { portalled = true, ...contentProps } = props;
+  const { __scope = ROOT_NAME, __part = CONTENT_NAME, portalled = true, ...contentProps } = props;
   const PortalWrapper = portalled ? Portal : React.Fragment;
   return (
-    <PortalWrapper>
+    <PortalWrapper __scope={__scope} __part={__part}>
       <PopperPrimitive.Content
         {...contentProps}
+        __scope={__scope}
+        __part={__part}
         ref={forwardedRef}
         style={{
           ...contentProps.style,
@@ -186,7 +200,12 @@ type PopperArrowProps = Radix.ComponentPropsWithoutRef<typeof PopperPrimitive.Ar
 interface HoverCardArrowProps extends PopperArrowProps {}
 
 const HoverCardArrow = React.forwardRef<HoverCardArrowElement, HoverCardArrowProps>(
-  (props, forwardedRef) => <PopperPrimitive.Arrow {...props} ref={forwardedRef} />
+  (props, forwardedRef) => {
+    const { __scope = ROOT_NAME, __part = ARROW_NAME, ...arrowProps } = props;
+    return (
+      <PopperPrimitive.Arrow {...arrowProps} __scope={__scope} __part={__part} ref={forwardedRef} />
+    );
+  }
 );
 
 HoverCardArrow.displayName = ARROW_NAME;

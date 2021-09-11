@@ -7,7 +7,7 @@ import type * as Radix from '@radix-ui/react-primitive';
  * AspectRatio
  * -----------------------------------------------------------------------------------------------*/
 
-const NAME = 'AspectRatio';
+const ROOT_NAME = 'AspectRatio';
 
 type AspectRatioElement = React.ElementRef<typeof Primitive.div>;
 type PrimitiveDivProps = Radix.ComponentPropsWithoutRef<typeof Primitive.div>;
@@ -17,7 +17,13 @@ interface AspectRatioProps extends PrimitiveDivProps {
 
 const AspectRatio = React.forwardRef<AspectRatioElement, AspectRatioProps>(
   (props, forwardedRef) => {
-    const { ratio = 1 / 1, style, ...aspectRatioProps } = props;
+    const {
+      __scope = ROOT_NAME,
+      __part = ROOT_NAME,
+      ratio = 1 / 1,
+      style,
+      ...aspectRatioProps
+    } = props;
     return (
       <div
         style={{
@@ -31,6 +37,8 @@ const AspectRatio = React.forwardRef<AspectRatioElement, AspectRatioProps>(
       >
         <Primitive.div
           {...aspectRatioProps}
+          __scope={__scope}
+          __part={__part}
           ref={forwardedRef}
           style={{
             ...style,
@@ -47,7 +55,7 @@ const AspectRatio = React.forwardRef<AspectRatioElement, AspectRatioProps>(
   }
 );
 
-AspectRatio.displayName = NAME;
+AspectRatio.displayName = ROOT_NAME;
 
 /* -----------------------------------------------------------------------------------------------*/
 

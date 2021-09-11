@@ -17,7 +17,7 @@ import type * as Radix from '@radix-ui/react-primitive';
 const RADIO_NAME = 'Radio';
 
 type RadioContextValue = { checked: boolean; disabled?: boolean };
-const [RadioProvider, useRadioContext] = createContext<RadioContextValue>(RADIO_NAME);
+const [RadioProvider, useRadioContext] = createContext<RadioContextValue>();
 
 type RadioElement = React.ElementRef<typeof Primitive.button>;
 type PrimitiveButtonProps = Radix.ComponentPropsWithoutRef<typeof Primitive.button>;

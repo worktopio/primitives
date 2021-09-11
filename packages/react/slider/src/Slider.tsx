@@ -43,7 +43,7 @@ type SliderContextValue = {
   orientation: SliderProps['orientation'];
 };
 
-const [SliderProvider, useSliderContext] = createContext<SliderContextValue>(SLIDER_NAME);
+const [SliderProvider, useSliderContext] = createContext<SliderContextValue>();
 
 type SliderElement = SliderHorizontalElement | SliderVerticalElement;
 interface SliderProps
@@ -182,7 +182,7 @@ const [SliderOrientationProvider, useSliderOrientationContext] = createContext<{
   endEdge: 'top' | 'right' | 'left';
   size: keyof NonNullable<ReturnType<typeof useSize>>;
   direction: number;
-}>(SLIDER_NAME, {
+}>({
   startEdge: 'left',
   endEdge: 'right',
   size: 'width',

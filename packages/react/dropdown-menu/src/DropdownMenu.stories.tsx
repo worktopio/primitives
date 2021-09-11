@@ -19,6 +19,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { css } from '../../../../stitches.config';
 import { foodGroups } from '../../../../test-data/foods';
 import { classes, TickIcon } from '../../menu/src/Menu.stories';
+import * as Tooltip from '@radix-ui/react-tooltip';
 
 const { contentClass, itemClass, labelClass, separatorClass, subTriggerClass } = classes;
 
@@ -48,6 +49,38 @@ export const Styled = () => (
         <DropdownMenuArrow />
       </DropdownMenuContent>
     </DropdownMenu>
+  </div>
+);
+
+export const WithTooltip = () => (
+  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200vh' }}>
+    <Tooltip.Root>
+      <DropdownMenu>
+        <Tooltip.Trigger asChild>
+          <DropdownMenuTrigger className={triggerClass}>Open</DropdownMenuTrigger>
+        </Tooltip.Trigger>
+        <Tooltip.Content>Tooltip</Tooltip.Content>
+        <DropdownMenuContent className={contentClass} sideOffset={5}>
+          <DropdownMenuItem className={itemClass} onSelect={() => console.log('undo')}>
+            Undo
+          </DropdownMenuItem>
+          <DropdownMenuItem className={itemClass} onSelect={() => console.log('redo')}>
+            Redo
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className={separatorClass} />
+          <DropdownMenuItem className={itemClass} disabled onSelect={() => console.log('cut')}>
+            Cut
+          </DropdownMenuItem>
+          <DropdownMenuItem className={itemClass} onSelect={() => console.log('copy')}>
+            Copy
+          </DropdownMenuItem>
+          <DropdownMenuItem className={itemClass} onSelect={() => console.log('paste')}>
+            Paste
+          </DropdownMenuItem>
+          <DropdownMenuArrow />
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </Tooltip.Root>
   </div>
 );
 

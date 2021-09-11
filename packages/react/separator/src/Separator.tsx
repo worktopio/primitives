@@ -7,7 +7,7 @@ import type * as Radix from '@radix-ui/react-primitive';
  *  Separator
  * -----------------------------------------------------------------------------------------------*/
 
-const NAME = 'Separator';
+const ROOT_NAME = 'Separator';
 const DEFAULT_ORIENTATION = 'horizontal';
 const ORIENTATIONS = ['horizontal', 'vertical'] as const;
 
@@ -27,25 +27,31 @@ interface SeparatorProps extends PrimitiveDivProps {
 }
 
 const Separator = React.forwardRef<SeparatorElement, SeparatorProps>((props, forwardedRef) => {
-  const { decorative, orientation: orientationProp = DEFAULT_ORIENTATION, ...domProps } = props;
+  const {
+    __scope = ROOT_NAME,
+    __part = ROOT_NAME,
+    decorative,
+    orientation: orientationProp = DEFAULT_ORIENTATION,
+    ...separatorProps
+  } = props;
   const orientation = isValidOrientation(orientationProp) ? orientationProp : DEFAULT_ORIENTATION;
   // `aria-orientation` defaults to `horizontal` so we only need it if `orientation` is vertical
   const ariaOrientation = orientation === 'vertical' ? orientation : undefined;
-  const semanticProps = decorative
-    ? { role: 'none' }
-    : { 'aria-orientation': ariaOrientation, role: 'separator' };
 
   return (
     <Primitive.div
       data-orientation={orientation}
-      {...semanticProps}
-      {...domProps}
+      role={decorative ? 'none' : 'separator'}
+      aria-orientation={decorative ? undefined : ariaOrientation}
+      {...separatorProps}
+      __scope={__scope}
+      __part={__part}
       ref={forwardedRef}
     />
   );
 });
 
-Separator.displayName = NAME;
+Separator.displayName = ROOT_NAME;
 
 Separator.propTypes = {
   orientation(props, propName, componentName) {

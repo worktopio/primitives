@@ -8,12 +8,12 @@ import type * as Radix from '@radix-ui/react-primitive';
  * Progress
  * -----------------------------------------------------------------------------------------------*/
 
-const PROGRESS_NAME = 'Progress';
+const ROOT_NAME = 'Progress';
 const DEFAULT_MAX = 100;
 
 type ProgressState = 'indeterminate' | 'complete' | 'loading';
 type ProgressContextValue = { value: number | null; max: number };
-const [ProgressProvider, useProgressContext] = createContext<ProgressContextValue>(PROGRESS_NAME);
+const [ProgressProvider, useProgressContext] = createContext<ProgressContextValue>();
 
 type ProgressElement = React.ElementRef<typeof Primitive.div>;
 type PrimitiveDivProps = Radix.ComponentPropsWithoutRef<typeof Primitive.div>;
@@ -25,6 +25,8 @@ interface ProgressProps extends PrimitiveDivProps {
 
 const Progress = React.forwardRef<ProgressElement, ProgressProps>((props, forwardedRef) => {
   const {
+    __scope = ROOT_NAME,
+    __part = ROOT_NAME,
     value: valueProp,
     max: maxProp,
     getValueLabel = defaultGetValueLabel,
@@ -36,7 +38,7 @@ const Progress = React.forwardRef<ProgressElement, ProgressProps>((props, forwar
   const valueLabel = isNumber(value) ? getValueLabel(value, max) : undefined;
 
   return (
-    <ProgressProvider value={value} max={max}>
+    <ProgressProvider scope={__scope} value={value} max={max}>
       <Primitive.div
         aria-valuemax={max}
         aria-valuemin={0}
@@ -47,13 +49,15 @@ const Progress = React.forwardRef<ProgressElement, ProgressProps>((props, forwar
         data-value={value ?? undefined}
         data-max={max}
         {...progressProps}
+        __scope={__scope}
+        __part={__part}
         ref={forwardedRef}
       />
     </ProgressProvider>
   );
 });
 
-Progress.displayName = PROGRESS_NAME;
+Progress.displayName = ROOT_NAME;
 
 Progress.propTypes = {
   max(props, propName, componentName) {
@@ -86,13 +90,16 @@ interface ProgressIndicatorProps extends PrimitiveDivProps {}
 
 const ProgressIndicator = React.forwardRef<ProgressIndicatorElement, ProgressIndicatorProps>(
   (props, forwardedRef) => {
-    const context = useProgressContext(INDICATOR_NAME);
+    const { __scope = ROOT_NAME, __part = INDICATOR_NAME, ...indicatorProps } = props;
+    const context = useProgressContext(__scope, __part);
     return (
       <Primitive.div
         data-state={getProgressState(context.value, context.max)}
         data-value={context.value ?? undefined}
         data-max={context.max}
-        {...props}
+        {...indicatorProps}
+        __scope={__scope}
+        __part={__part}
         ref={forwardedRef}
       />
     );
@@ -104,7 +111,7 @@ ProgressIndicator.displayName = INDICATOR_NAME;
 /* ---------------------------------------------------------------------------------------------- */
 
 function useProgressState() {
-  const context = useProgressContext('useProgressState');
+  const context = useProgressContext(ROOT_NAME, 'ProgressConsumer');
   return getProgressState(context.value, context.max);
 }
 

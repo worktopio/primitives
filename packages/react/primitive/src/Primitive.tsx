@@ -12,12 +12,13 @@ type ComponentPropsWithoutRef<T extends React.ElementType> = PropsWithoutRef<
 >;
 
 type Primitives = { [E in typeof NODES[number]]: PrimitiveForwardRefComponent<E> };
+type PrimitivePrivateProps = { __scope?: string; __part?: string };
 type PrimitivePropsWithRef<E extends React.ElementType> = React.ComponentPropsWithRef<E> & {
   asChild?: boolean;
 };
 
 interface PrimitiveForwardRefComponent<E extends React.ElementType>
-  extends React.ForwardRefExoticComponent<PrimitivePropsWithRef<E>> {}
+  extends React.ForwardRefExoticComponent<PrimitivePropsWithRef<E> & PrimitivePrivateProps> {}
 
 /* -------------------------------------------------------------------------------------------------
  * Primitive
@@ -26,12 +27,14 @@ interface PrimitiveForwardRefComponent<E extends React.ElementType>
 const Primitive = NODES.reduce(
   (primitive, node) => ({
     ...primitive,
-    [node]: React.forwardRef((props: PrimitivePropsWithRef<typeof node>, forwardedRef: any) => {
-      const { asChild, ...primitiveProps } = props;
-      const Comp: any = asChild ? Slot : node;
-      if ((props as any).as) console.error(AS_ERROR);
-      return <Comp {...primitiveProps} ref={forwardedRef} />;
-    }),
+    [node]: React.forwardRef(
+      (props: PrimitivePropsWithRef<typeof node> & PrimitivePrivateProps, forwardedRef: any) => {
+        const { __scope, __part, asChild, ...primitiveProps } = props;
+        const Comp: any = asChild ? Slot : node;
+        if ((props as any).as) console.error(AS_ERROR);
+        return <Comp {...primitiveProps} ref={forwardedRef} />;
+      }
+    ),
   }),
   {} as Primitives
 );
@@ -47,4 +50,4 @@ export {
   //
   Root,
 };
-export type { ComponentPropsWithoutRef, PrimitivePropsWithRef };
+export type { ComponentPropsWithoutRef, PrimitivePropsWithRef, PrimitivePrivateProps };

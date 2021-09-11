@@ -11,10 +11,10 @@ const defaultIdContext = {
   current: 0,
 };
 
-const [IdProviderImpl, useIdContext] = createContext(PROVIDER_NAME, defaultIdContext);
+const [IdProviderImpl, useIdContext] = createContext(defaultIdContext);
 
 const IdProvider: React.FC<{ children: React.ReactNode }> = (props) => {
-  const currentContext = useIdContext(PROVIDER_NAME);
+  const currentContext = useIdContext(PROVIDER_NAME, PROVIDER_NAME);
   const isRootIdProvider = currentContext === defaultIdContext;
   return (
     <IdProviderImpl
@@ -26,7 +26,7 @@ const IdProvider: React.FC<{ children: React.ReactNode }> = (props) => {
 };
 
 function useId(deterministicId?: string): string {
-  const context = useIdContext('IdProviderConsumer');
+  const context = useIdContext(PROVIDER_NAME, 'IdProviderConsumer');
   const isBrowser = Boolean(globalThis?.document);
 
   if (!isBrowser && context === defaultIdContext) {

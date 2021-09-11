@@ -14,10 +14,10 @@ import type * as Radix from '@radix-ui/react-primitive';
  * Switch
  * -----------------------------------------------------------------------------------------------*/
 
-const SWITCH_NAME = 'Switch';
+const ROOT_NAME = 'Switch';
 
 type SwitchContextValue = { checked: boolean; disabled?: boolean };
-const [SwitchProvider, useSwitchContext] = createContext<SwitchContextValue>(SWITCH_NAME);
+const [SwitchProvider, useSwitchContext] = createContext<SwitchContextValue>();
 
 type SwitchElement = React.ElementRef<typeof Primitive.button>;
 type PrimitiveButtonProps = Radix.ComponentPropsWithoutRef<typeof Primitive.button>;
@@ -30,6 +30,8 @@ interface SwitchProps extends PrimitiveButtonProps {
 
 const Switch = React.forwardRef<SwitchElement, SwitchProps>((props, forwardedRef) => {
   const {
+    __scope = ROOT_NAME,
+    __part = ROOT_NAME,
     'aria-labelledby': ariaLabelledby,
     name,
     checked: checkedProp,
@@ -54,7 +56,7 @@ const Switch = React.forwardRef<SwitchElement, SwitchProps>((props, forwardedRef
   });
 
   return (
-    <SwitchProvider checked={checked} disabled={disabled}>
+    <SwitchProvider scope={__scope} checked={checked} disabled={disabled}>
       <Primitive.button
         type="button"
         role="switch"
@@ -66,6 +68,8 @@ const Switch = React.forwardRef<SwitchElement, SwitchProps>((props, forwardedRef
         disabled={disabled}
         value={value}
         {...switchProps}
+        __scope={__scope}
+        __part={__part}
         ref={composedRefs}
         onClick={composeEventHandlers(props.onClick, (event) => {
           setChecked((prevChecked) => !prevChecked);
@@ -97,7 +101,7 @@ const Switch = React.forwardRef<SwitchElement, SwitchProps>((props, forwardedRef
   );
 });
 
-Switch.displayName = SWITCH_NAME;
+Switch.displayName = ROOT_NAME;
 
 /* -------------------------------------------------------------------------------------------------
  * SwitchThumb
@@ -111,12 +115,15 @@ interface SwitchThumbProps extends PrimitiveSpanProps {}
 
 const SwitchThumb = React.forwardRef<SwitchThumbElement, SwitchThumbProps>(
   (props, forwardedRef) => {
-    const context = useSwitchContext(THUMB_NAME);
+    const { __scope = ROOT_NAME, __part = THUMB_NAME, ...thumbProps } = props;
+    const context = useSwitchContext(__scope, __part);
     return (
       <Primitive.span
         data-state={getState(context.checked)}
         data-disabled={context.disabled ? '' : undefined}
-        {...props}
+        {...thumbProps}
+        __scope={__scope}
+        __part={__part}
         ref={forwardedRef}
       />
     );

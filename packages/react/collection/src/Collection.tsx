@@ -6,7 +6,7 @@ import { Slot } from '@radix-ui/react-slot';
 import type * as Radix from '@radix-ui/react-primitive';
 
 type SlotProps = Radix.ComponentPropsWithoutRef<typeof Slot>;
-interface CollectionProps extends SlotProps {}
+interface CollectionProps extends SlotProps, Radix.PrimitivePrivateProps {}
 
 // We have resorted to returning slots directly rather than exposing primitives that can then
 // be slotted like `<CollectionItem as={Slot}>…</CollectionItem>`.
@@ -17,7 +17,7 @@ function createCollection<ItemElement extends HTMLElement, ItemData>() {
   /* -----------------------------------------------------------------------------------------------
    * CollectionProvider
    * ---------------------------------------------------------------------------------------------*/
-  const PROVIDER_NAME = 'CollectionProvider';
+  const ROOT_NAME = 'CollectionProvider';
 
   type CollectionElement = HTMLElement;
 
@@ -26,39 +26,41 @@ function createCollection<ItemElement extends HTMLElement, ItemData>() {
     itemMap: Map<React.RefObject<ItemElement>, { ref: React.RefObject<ItemElement> } & ItemData>;
   };
 
-  const [CollectionProviderImpl, useCollectionContext] = createContext<ContextValue>(
-    PROVIDER_NAME,
-    { collectionRef: { current: null }, itemMap: new Map() }
-  );
+  const [CollectionProviderImpl, useCollectionContext] = createContext<ContextValue>({
+    collectionRef: { current: null },
+    itemMap: new Map(),
+  });
 
-  const CollectionProvider: React.FC = (props) => {
-    const { children } = props;
+  const CollectionProvider: React.FC<
+    Pick<Radix.ComponentPropsWithoutRef<typeof CollectionProviderImpl>, 'scope'>
+  > = (props) => {
+    const { scope = ROOT_NAME, children } = props;
     const ref = React.useRef<CollectionElement>(null);
     const itemMap = React.useRef<ContextValue['itemMap']>(new Map()).current;
     return (
-      <CollectionProviderImpl itemMap={itemMap} collectionRef={ref}>
+      <CollectionProviderImpl scope={scope} itemMap={itemMap} collectionRef={ref}>
         {children}
       </CollectionProviderImpl>
     );
   };
 
-  CollectionProvider.displayName = PROVIDER_NAME;
+  CollectionProvider.displayName = ROOT_NAME;
 
   /* -----------------------------------------------------------------------------------------------
    * CollectionSlot
    * ---------------------------------------------------------------------------------------------*/
-  const COLLECTION_SLOT_NAME = 'CollectionSlot';
+  const SLOT_NAME = 'CollectionSlot';
 
   const CollectionSlot = React.forwardRef<CollectionElement, CollectionProps>(
     (props, forwardedRef) => {
-      const { children } = props;
-      const context = useCollectionContext(COLLECTION_SLOT_NAME);
+      const { __scope = ROOT_NAME, __part = SLOT_NAME, children } = props;
+      const context = useCollectionContext(__scope, __part);
       const composedRefs = useComposedRefs(forwardedRef, context.collectionRef);
       return <Slot ref={composedRefs}>{children}</Slot>;
     }
   );
 
-  CollectionSlot.displayName = COLLECTION_SLOT_NAME;
+  CollectionSlot.displayName = SLOT_NAME;
 
   /* -----------------------------------------------------------------------------------------------
    * CollectionItem
@@ -67,16 +69,17 @@ function createCollection<ItemElement extends HTMLElement, ItemData>() {
   const ITEM_SLOT_NAME = 'CollectionItemSlot';
   const ITEM_DATA_ATTR = 'data-radix-collection-item';
 
-  type CollectionItemSlotProps = ItemData & {
-    children: React.ReactNode;
-  };
+  type CollectionItemSlotProps = ItemData &
+    Radix.PrimitivePrivateProps & {
+      children: React.ReactNode;
+    };
 
   const CollectionItemSlot = React.forwardRef<ItemElement, CollectionItemSlotProps>(
     (props, forwardedRef) => {
-      const { children, ...itemData } = props;
+      const { __scope = ROOT_NAME, __part = ITEM_SLOT_NAME, children, ...itemData } = props;
       const ref = React.useRef<ItemElement>(null);
       const composedRefs = useComposedRefs(forwardedRef, ref);
-      const context = useCollectionContext(ITEM_SLOT_NAME);
+      const context = useCollectionContext(__scope, __part);
 
       React.useEffect(() => {
         context.itemMap.set(ref, { ref, ...(itemData as unknown as ItemData) });
@@ -97,8 +100,8 @@ function createCollection<ItemElement extends HTMLElement, ItemData>() {
    * useCollection
    * ---------------------------------------------------------------------------------------------*/
 
-  function useCollection() {
-    const context = useCollectionContext('CollectionConsumer');
+  function useCollection(scope: string, part: string) {
+    const context = useCollectionContext(scope, part);
     return {
       getItems() {
         const collection = context.collectionRef.current;

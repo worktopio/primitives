@@ -30,7 +30,7 @@ const stateMachine = createStateMachine(tooltipStateChart);
  * Tooltip
  * -----------------------------------------------------------------------------------------------*/
 
-const TOOLTIP_NAME = 'Tooltip';
+const ROOT_NAME = 'Tooltip';
 
 type TooltipContextValue = {
   contentId: string;
@@ -43,9 +43,9 @@ type TooltipContextValue = {
   onClose(): void;
 };
 
-const [TooltipProvider, useTooltipContext] = createContext<TooltipContextValue>(TOOLTIP_NAME);
+const [TooltipProvider, useTooltipContext] = createContext<TooltipContextValue>();
 
-interface TooltipProps {
+interface TooltipProps extends Radix.PrimitivePrivateProps {
   open?: boolean;
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -65,6 +65,8 @@ interface TooltipProps {
 
 const Tooltip: React.FC<TooltipProps> = (props) => {
   const {
+    __scope = ROOT_NAME,
+    __part = ROOT_NAME,
     children,
     open: openProp,
     defaultOpen = false,
@@ -138,8 +140,9 @@ const Tooltip: React.FC<TooltipProps> = (props) => {
   }, [contentId, openProp]);
 
   return (
-    <PopperPrimitive.Root>
+    <PopperPrimitive.Root __scope={__scope} __part={__part}>
       <TooltipProvider
+        scope={__scope}
         contentId={contentId}
         open={open}
         stateAttribute={stateAttribute}
@@ -155,7 +158,7 @@ const Tooltip: React.FC<TooltipProps> = (props) => {
   );
 };
 
-Tooltip.displayName = TOOLTIP_NAME;
+Tooltip.displayName = ROOT_NAME;
 
 /* -------------------------------------------------------------------------------------------------
  * TooltipTrigger
@@ -169,15 +172,16 @@ interface TooltipTriggerProps extends PrimitiveButtonProps {}
 
 const TooltipTrigger = React.forwardRef<TooltipTriggerElement, TooltipTriggerProps>(
   (props, forwardedRef) => {
-    const context = useTooltipContext(TRIGGER_NAME);
+    const { __scope = ROOT_NAME, __part = TRIGGER_NAME, ...triggerProps } = props;
+    const context = useTooltipContext(__scope, __part);
     const composedTriggerRef = useComposedRefs(forwardedRef, context.onTriggerChange);
     return (
-      <PopperPrimitive.Anchor asChild>
+      <PopperPrimitive.Anchor asChild __scope={__scope} __part={__part}>
         <Primitive.button
           type="button"
           aria-describedby={context.open ? context.contentId : undefined}
           data-state={context.stateAttribute}
-          {...props}
+          {...triggerProps}
           ref={composedTriggerRef}
           onMouseEnter={composeEventHandlers(props.onMouseEnter, context.onOpen)}
           onMouseLeave={composeEventHandlers(props.onMouseLeave, context.onClose)}
@@ -214,11 +218,16 @@ interface TooltipContentProps extends TooltipContentImplProps {
 
 const TooltipContent = React.forwardRef<TooltipContentElement, TooltipContentProps>(
   (props, forwardedRef) => {
-    const { forceMount, ...contentProps } = props;
-    const context = useTooltipContext(CONTENT_NAME);
+    const { __scope = ROOT_NAME, __part = CONTENT_NAME, forceMount, ...contentProps } = props;
+    const context = useTooltipContext(__scope, __part);
     return (
       <Presence present={forceMount || context.open}>
-        <TooltipContentImpl ref={forwardedRef} {...contentProps} />
+        <TooltipContentImpl
+          ref={forwardedRef}
+          __scope={__scope}
+          __part={__part}
+          {...contentProps}
+        />
       </Presence>
     );
   }
@@ -241,18 +250,27 @@ interface TooltipContentImplProps extends PopperContentProps {
 
 const TooltipContentImpl = React.forwardRef<TooltipContentImplElement, TooltipContentImplProps>(
   (props, forwardedRef) => {
-    const { children, 'aria-label': ariaLabel, portalled = true, ...contentProps } = props;
-    const context = useTooltipContext(CONTENT_NAME);
+    const {
+      __scope = ROOT_NAME,
+      __part = CONTENT_NAME,
+      children,
+      'aria-label': ariaLabel,
+      portalled = true,
+      ...contentProps
+    } = props;
+    const context = useTooltipContext(__scope, __part);
     const PortalWrapper = portalled ? Portal : React.Fragment;
 
     useEscapeKeydown(() => context.onClose());
 
     return (
-      <PortalWrapper>
-        <CheckTriggerMoved />
+      <PortalWrapper __scope={__scope} __part={__part}>
+        <CheckTriggerMoved __scope={__scope} __part={__part} />
         <PopperPrimitive.Content
           data-state={context.stateAttribute}
           {...contentProps}
+          __scope={__scope}
+          __part={__part}
           ref={forwardedRef}
           style={{
             ...contentProps.style,
@@ -262,7 +280,12 @@ const TooltipContentImpl = React.forwardRef<TooltipContentImplElement, TooltipCo
           }}
         >
           <Slottable>{children}</Slottable>
-          <VisuallyHiddenPrimitive.Root id={context.contentId} role="tooltip">
+          <VisuallyHiddenPrimitive.Root
+            id={context.contentId}
+            __scope={__scope}
+            __part={__part}
+            role="tooltip"
+          >
             {ariaLabel || children}
           </VisuallyHiddenPrimitive.Root>
         </PopperPrimitive.Content>
@@ -284,15 +307,23 @@ type PopperArrowProps = Radix.ComponentPropsWithoutRef<typeof PopperPrimitive.Ar
 interface TooltipArrowProps extends PopperArrowProps {}
 
 const TooltipArrow = React.forwardRef<TooltipArrowElement, TooltipArrowProps>(
-  (props, forwardedRef) => <PopperPrimitive.Arrow {...props} ref={forwardedRef} />
+  (props, forwardedRef) => {
+    const { __scope = ROOT_NAME, __part = ARROW_NAME, ...arrowProps } = props;
+    return (
+      <PopperPrimitive.Arrow {...arrowProps} __scope={__scope} __part={__part} ref={forwardedRef} />
+    );
+  }
 );
 
 TooltipArrow.displayName = ARROW_NAME;
 
 /* -----------------------------------------------------------------------------------------------*/
 
-function CheckTriggerMoved() {
-  const context = useTooltipContext('CheckTriggerMoved');
+interface CheckTriggerMovedProps extends Radix.PrimitivePrivateProps {}
+
+function CheckTriggerMoved(props: CheckTriggerMovedProps) {
+  const { __scope = ROOT_NAME, __part = 'CheckTriggerMoved' } = props;
+  const context = useTooltipContext(__scope, __part);
 
   const triggerRect = useRect(context.trigger);
   const triggerLeft = triggerRect?.left;

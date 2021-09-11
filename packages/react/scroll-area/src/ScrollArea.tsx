@@ -52,8 +52,7 @@ type ScrollAreaContextValue = {
   onCornerHeightChange(height: number): void;
 };
 
-const [ScrollAreaProvider, useScrollAreaContext] =
-  createContext<ScrollAreaContextValue>(SCROLL_AREA_NAME);
+const [ScrollAreaProvider, useScrollAreaContext] = createContext<ScrollAreaContextValue>();
 
 type ScrollAreaElement = React.ElementRef<typeof Primitive.div>;
 type PrimitiveDivProps = Radix.ComponentPropsWithoutRef<typeof Primitive.div>;
@@ -599,7 +598,7 @@ type ScrollbarContext = {
   onThumbPositionChange(): void;
 };
 
-const [ScrollbarProvider, useScrollbarContext] = createContext<ScrollbarContext>(SCROLLBAR_NAME);
+const [ScrollbarProvider, useScrollbarContext] = createContext<ScrollbarContext>();
 
 type ScrollAreaScrollbarImplElement = React.ElementRef<typeof Primitive.div>;
 type ScrollAreaScrollbarImplPrivateProps = {

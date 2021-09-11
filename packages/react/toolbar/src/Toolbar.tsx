@@ -12,11 +12,11 @@ import type * as Radix from '@radix-ui/react-primitive';
  * Toolbar
  * -----------------------------------------------------------------------------------------------*/
 
-const TOOLBAR_NAME = 'Toolbar';
+const ROOT_NAME = 'Toolbar';
 
 type RovingFocusGroupProps = Radix.ComponentPropsWithoutRef<typeof RovingFocusGroup>;
 type ToolbarContextValue = { orientation: RovingFocusGroupProps['orientation'] };
-const [ToolbarProvider, useToolbarContext] = createContext<ToolbarContextValue>(TOOLBAR_NAME);
+const [ToolbarProvider, useToolbarContext] = createContext<ToolbarContextValue>();
 
 type ToolbarElement = React.ElementRef<typeof Primitive.div>;
 type PrimitiveDivProps = Radix.ComponentPropsWithoutRef<typeof Primitive.div>;
@@ -27,15 +27,31 @@ interface ToolbarProps extends PrimitiveDivProps {
 }
 
 const Toolbar = React.forwardRef<ToolbarElement, ToolbarProps>((props, forwardedRef) => {
-  const { orientation = 'horizontal', dir = 'ltr', loop = true, ...toolbarProps } = props;
+  const {
+    __scope = ROOT_NAME,
+    __part = ROOT_NAME,
+    orientation = 'horizontal',
+    dir = 'ltr',
+    loop = true,
+    ...toolbarProps
+  } = props;
   return (
-    <ToolbarProvider orientation={orientation}>
-      <RovingFocusGroup asChild orientation={orientation} dir={dir} loop={loop}>
+    <ToolbarProvider scope={__scope} orientation={orientation}>
+      <RovingFocusGroup
+        asChild
+        __scope={__scope}
+        __part={__part}
+        orientation={orientation}
+        dir={dir}
+        loop={loop}
+      >
         <Primitive.div role="toolbar" dir={dir} {...toolbarProps} ref={forwardedRef} />
       </RovingFocusGroup>
     </ToolbarProvider>
   );
 });
+
+Toolbar.displayName = ROOT_NAME;
 
 /* -------------------------------------------------------------------------------------------------
  * ToolbarSeparator
@@ -49,11 +65,14 @@ interface ToolbarSeparatorProps extends SeparatorProps {}
 
 const ToolbarSeparator = React.forwardRef<ToolbarSeparatorElement, ToolbarSeparatorProps>(
   (props, forwardedRef) => {
-    const context = useToolbarContext(SEPARATOR_NAME);
+    const { __scope = ROOT_NAME, __part = SEPARATOR_NAME, ...separatorProps } = props;
+    const context = useToolbarContext(__scope, __part);
     return (
       <SeparatorPrimitive.Root
         orientation={context.orientation === 'horizontal' ? 'vertical' : 'horizontal'}
-        {...props}
+        {...separatorProps}
+        __scope={__scope}
+        __part={__part}
         ref={forwardedRef}
       />
     );
@@ -73,11 +92,14 @@ type PrimitiveButtonProps = Radix.ComponentPropsWithoutRef<typeof Primitive.butt
 interface ToolbarButtonProps extends PrimitiveButtonProps {}
 
 const ToolbarButton = React.forwardRef<ToolbarButtonElement, ToolbarButtonProps>(
-  (props, forwardedRef) => (
-    <RovingFocusItem asChild focusable={!props.disabled}>
-      <Primitive.button role="toolbaritem" {...props} ref={forwardedRef} />
-    </RovingFocusItem>
-  )
+  (props, forwardedRef) => {
+    const { __scope = ROOT_NAME, __part = BUTTON_NAME, ...buttonProps } = props;
+    return (
+      <RovingFocusItem asChild __scope={__scope} __part={__part} focusable={!props.disabled}>
+        <Primitive.button role="toolbaritem" {...buttonProps} ref={forwardedRef} />
+      </RovingFocusItem>
+    );
+  }
 );
 
 ToolbarButton.displayName = BUTTON_NAME;
@@ -93,18 +115,21 @@ type PrimitiveLinkProps = Radix.ComponentPropsWithoutRef<typeof Primitive.a>;
 interface ToolbarLinkProps extends PrimitiveLinkProps {}
 
 const ToolbarLink = React.forwardRef<ToolbarLinkElement, ToolbarLinkProps>(
-  (props, forwardedRef) => (
-    <RovingFocusItem asChild focusable>
-      <Primitive.a
-        role="toolbaritem"
-        {...props}
-        ref={forwardedRef}
-        onKeyDown={composeEventHandlers(props.onKeyDown, (event) => {
-          if (event.key === ' ') event.currentTarget.click();
-        })}
-      />
-    </RovingFocusItem>
-  )
+  (props, forwardedRef) => {
+    const { __scope = ROOT_NAME, __part = LINK_NAME, ...linkProps } = props;
+    return (
+      <RovingFocusItem asChild __scope={__scope} __part={__part} focusable>
+        <Primitive.a
+          role="toolbaritem"
+          {...linkProps}
+          ref={forwardedRef}
+          onKeyDown={composeEventHandlers(props.onKeyDown, (event) => {
+            if (event.key === ' ') event.currentTarget.click();
+          })}
+        />
+      </RovingFocusItem>
+    );
+  }
 );
 
 ToolbarLink.displayName = LINK_NAME;
@@ -113,7 +138,7 @@ ToolbarLink.displayName = LINK_NAME;
  * ToolbarToggleGroup
  * -----------------------------------------------------------------------------------------------*/
 
-const TOGGLE_GROUP_NAME = 'ToolbarToggleGroup';
+const GROUP_NAME = 'ToolbarToggleGroup';
 
 type ToolbarToggleGroupElement = React.ElementRef<typeof ToggleGroupPrimitive.Root>;
 type ToggleGroupProps = Radix.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Root>;
@@ -124,38 +149,44 @@ const ToolbarToggleGroup = React.forwardRef<
   ToolbarToggleGroupElement,
   ToolbarToggleGroupSingleProps | ToolbarToggleGroupMultipleProps
 >((props, forwardedRef) => {
-  const context = useToolbarContext(TOGGLE_GROUP_NAME);
+  const { __scope = ROOT_NAME, __part = GROUP_NAME, ...groupProps } = props;
+  const context = useToolbarContext(__scope, __part);
   return (
     <ToggleGroupPrimitive.Root
       data-orientation={context.orientation}
-      {...props}
+      {...groupProps}
+      __scope={__scope}
+      __part={__part}
       ref={forwardedRef}
       rovingFocus={false}
     />
   );
 });
 
-ToolbarToggleGroup.displayName = TOGGLE_GROUP_NAME;
+ToolbarToggleGroup.displayName = GROUP_NAME;
 
 /* -------------------------------------------------------------------------------------------------
  * ToolbarToggleItem
  * -----------------------------------------------------------------------------------------------*/
 
-const TOGGLE_ITEM_NAME = 'ToolbarToggleItem';
+const ITEM_NAME = 'ToolbarToggleItem';
 
 type ToolbarToggleItemElement = React.ElementRef<typeof ToggleGroupPrimitive.Item>;
 type ToggleGroupItemProps = Radix.ComponentPropsWithoutRef<typeof ToggleGroupPrimitive.Item>;
 interface ToolbarToggleItemProps extends ToggleGroupItemProps {}
 
 const ToolbarToggleItem = React.forwardRef<ToolbarToggleItemElement, ToolbarToggleItemProps>(
-  (props, forwardedRef) => (
-    <ToolbarButton asChild disabled={props.disabled}>
-      <ToggleGroupPrimitive.Item {...props} ref={forwardedRef} />
-    </ToolbarButton>
-  )
+  (props, forwardedRef) => {
+    const { __scope = ROOT_NAME, __part = ITEM_NAME, ...itemProps } = props;
+    return (
+      <ToolbarButton asChild __scope={__scope} __part={__part} disabled={props.disabled}>
+        <ToggleGroupPrimitive.Item {...itemProps} ref={forwardedRef} />
+      </ToolbarButton>
+    );
+  }
 );
 
-ToolbarToggleItem.displayName = TOGGLE_ITEM_NAME;
+ToolbarToggleItem.displayName = ITEM_NAME;
 
 /* ---------------------------------------------------------------------------------------------- */
 

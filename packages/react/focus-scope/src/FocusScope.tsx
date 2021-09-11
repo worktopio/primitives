@@ -15,7 +15,7 @@ type FocusableTarget = HTMLElement | { focus(): void };
  * FocusScope
  * -----------------------------------------------------------------------------------------------*/
 
-const FOCUS_SCOPE_NAME = 'FocusScope';
+const ROOT_NAME = 'FocusScope';
 
 type FocusScopeElement = React.ElementRef<typeof Primitive.div>;
 type PrimitiveDivProps = Radix.ComponentPropsWithoutRef<typeof Primitive.div>;
@@ -49,6 +49,8 @@ interface FocusScopeProps extends PrimitiveDivProps {
 
 const FocusScope = React.forwardRef<FocusScopeElement, FocusScopeProps>((props, forwardedRef) => {
   const {
+    __scope = ROOT_NAME,
+    __part = ROOT_NAME,
     loop = false,
     trapped = false,
     onMountAutoFocus: onMountAutoFocusProp,
@@ -172,11 +174,18 @@ const FocusScope = React.forwardRef<FocusScopeElement, FocusScopeProps>((props, 
   );
 
   return (
-    <Primitive.div tabIndex={-1} {...scopeProps} ref={composedRefs} onKeyDown={handleKeyDown} />
+    <Primitive.div
+      tabIndex={-1}
+      {...scopeProps}
+      ref={composedRefs}
+      __scope={__scope}
+      __part={__part}
+      onKeyDown={handleKeyDown}
+    />
   );
 });
 
-FocusScope.displayName = FOCUS_SCOPE_NAME;
+FocusScope.displayName = ROOT_NAME;
 
 /* -------------------------------------------------------------------------------------------------
  * Utils
