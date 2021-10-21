@@ -35,16 +35,26 @@ interface FocusScopeProps extends PrimitiveDivProps {
   trapped?: boolean;
 
   /**
+   * Event handler called when attempting to tab out from the start of the scope
+   */
+  onStartLeave?(): void;
+
+  /**
+   * Event handler called when attempting to tab out from the end of the scope
+   */
+  onEndLeave?(): void;
+
+  /**
    * Event handler called when auto-focusing on mount.
    * Can be prevented.
    */
-  onMountAutoFocus?: (event: Event) => void;
+  onMountAutoFocus?(event: Event): void;
 
   /**
    * Event handler called when auto-focusing on unmount.
    * Can be prevented.
    */
-  onUnmountAutoFocus?: (event: Event) => void;
+  onUnmountAutoFocus?(event: Event): void;
 }
 
 const FocusScope = React.forwardRef<FocusScopeElement, FocusScopeProps>((props, forwardedRef) => {
@@ -53,11 +63,15 @@ const FocusScope = React.forwardRef<FocusScopeElement, FocusScopeProps>((props, 
     trapped = false,
     onMountAutoFocus: onMountAutoFocusProp,
     onUnmountAutoFocus: onUnmountAutoFocusProp,
+    onStartLeave: onStartLeaveProp,
+    onEndLeave: onEndLeaveProp,
     ...scopeProps
   } = props;
   const [container, setContainer] = React.useState<HTMLElement | null>(null);
   const onMountAutoFocus = useCallbackRef(onMountAutoFocusProp);
   const onUnmountAutoFocus = useCallbackRef(onUnmountAutoFocusProp);
+  const onStartLeave = useCallbackRef(onStartLeaveProp);
+  const onEndLeave = useCallbackRef(onEndLeaveProp);
   const lastFocusedElementRef = React.useRef<HTMLElement | null>(null);
   const composedRefs = useComposedRefs(forwardedRef, (node) => setContainer(node));
 
@@ -143,7 +157,6 @@ const FocusScope = React.forwardRef<FocusScopeElement, FocusScopeProps>((props, 
   // Takes care of looping focus (when tabbing whilst at the edges)
   const handleKeyDown = React.useCallback(
     (event: React.KeyboardEvent) => {
-      if (!loop && !trapped) return;
       if (focusScope.paused) return;
 
       const isTabKey = event.key === 'Tab' && !event.altKey && !event.ctrlKey && !event.metaKey;
@@ -155,20 +168,22 @@ const FocusScope = React.forwardRef<FocusScopeElement, FocusScopeProps>((props, 
         const hasTabbableElementsInside = first && last;
 
         // we can only wrap focus if we have tabbable edges
-        if (!hasTabbableElementsInside) {
+        if (!hasTabbableElementsInside && (loop || trapped)) {
           if (focusedElement === container) event.preventDefault();
         } else {
           if (!event.shiftKey && focusedElement === last) {
-            event.preventDefault();
+            onEndLeave();
+            if (loop || trapped) event.preventDefault();
             if (loop) focus(first, { select: true });
           } else if (event.shiftKey && focusedElement === first) {
+            onStartLeave();
             event.preventDefault();
             if (loop) focus(last, { select: true });
           }
         }
       }
     },
-    [loop, trapped, focusScope.paused]
+    [loop, trapped, focusScope.paused, onStartLeave, onEndLeave]
   );
 
   return (

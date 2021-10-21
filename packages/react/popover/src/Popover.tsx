@@ -17,6 +17,7 @@ import { hideOthers } from 'aria-hidden';
 
 import type * as Radix from '@radix-ui/react-primitive';
 import type { Scope } from '@radix-ui/react-context';
+import { Slottable } from '@radix-ui/react-slot';
 
 /* -------------------------------------------------------------------------------------------------
  * Popover
@@ -151,11 +152,19 @@ const PopoverTrigger = React.forwardRef<PopoverTriggerElement, PopoverTriggerPro
       />
     );
 
+    const nonModalConnector = (
+      <span aria-owns={context.contentId} style={{ position: 'absolute' }} />
+    );
+
     return context.hasCustomAnchor ? (
-      trigger
+      <>
+        {trigger}
+        {context.modal ? undefined : nonModalConnector}
+      </>
     ) : (
       <PopperPrimitive.Anchor asChild {...popperScope}>
-        {trigger}
+        <Slottable>{trigger}</Slottable>
+        {context.modal ? undefined : nonModalConnector}
       </PopperPrimitive.Anchor>
     );
   }
@@ -298,8 +307,10 @@ const PopoverContentNonModal = React.forwardRef<PopoverContentTypeElement, Popov
       <PortalWrapper>
         <FocusScope
           asChild
-          loop={portalled}
+          loop={false}
           trapped={false}
+          onStartLeave={() => context.triggerRef.current?.focus()}
+          onEndLeave={() => context.triggerRef.current?.focus()}
           onMountAutoFocus={onOpenAutoFocus}
           onUnmountAutoFocus={(event) => {
             props.onCloseAutoFocus?.(event);
