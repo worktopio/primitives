@@ -235,7 +235,7 @@ const TooltipTrigger = React.forwardRef<TooltipTriggerElement, TooltipTriggerPro
           data-state={context.stateAttribute}
           {...triggerProps}
           ref={composedTriggerRef}
-          onMouseOver={composeEventHandlers(props.onMouseOver, context.onOpen)}
+          onMouseEnter={composeEventHandlers(props.onMouseEnter, context.onOpen)}
           onMouseLeave={composeEventHandlers(props.onMouseLeave, context.onClose)}
           onMouseDown={composeEventHandlers(props.onMouseDown, context.onClose)}
           onFocus={composeEventHandlers(props.onFocus, context.onFocus)}
@@ -316,7 +316,7 @@ const TooltipContentImpl = React.forwardRef<TooltipContentImplElement, TooltipCo
     }, [onClose]);
 
     return (
-      <PortalWrapper>
+      <PortalWrapper style={{ pointerEvents: 'none' }}>
         <CheckTriggerMoved __scopeTooltip={__scopeTooltip} />
         <PopperPrimitive.Content
           data-state={context.stateAttribute}
@@ -324,6 +324,7 @@ const TooltipContentImpl = React.forwardRef<TooltipContentImplElement, TooltipCo
           {...contentProps}
           ref={forwardedRef}
           style={{
+            pointerEvents: 'auto',
             ...contentProps.style,
             // re-namespace exposed content custom property
             ['--radix-tooltip-content-transform-origin' as any]:

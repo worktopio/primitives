@@ -145,7 +145,7 @@ const PopperContent = React.forwardRef<PopperContentElement, PopperContentProps>
     const isPlaced = placedSide !== undefined;
 
     return (
-      <div style={popperStyles} data-radix-popper-content-wrapper="">
+      <div style={{ pointerEvents: 'none', ...popperStyles }} data-radix-popper-content-wrapper="">
         <PopperContentProvider
           scope={__scopePopper}
           arrowStyles={arrowStyles}
@@ -157,6 +157,7 @@ const PopperContent = React.forwardRef<PopperContentElement, PopperContentProps>
             data-align={placedAlign}
             {...contentProps}
             style={{
+              pointerEvents: 'auto',
               ...contentProps.style,
               // if the PopperContent hasn't been placed yet (not all measurements done)
               // we prevent animations so that users's animation don't kick in too early referring wrong sides

@@ -555,6 +555,7 @@ export const Animated = () => {
           side="right"
           sideOffset={5}
           label="Hello world 1"
+          style={{ pointerEvents: 'none' }}
         >
           <TooltipTrigger style={{ marginRight: 10 }}>Hello 1</TooltipTrigger>
         </SimpleTooltip>
@@ -564,6 +565,7 @@ export const Animated = () => {
           side="left"
           label="Hello world 2"
           sideOffset={5}
+          style={{ pointerEvents: 'none' }}
         >
           <TooltipTrigger>Hello 2</TooltipTrigger>
         </SimpleTooltip>
