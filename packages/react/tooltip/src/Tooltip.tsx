@@ -259,9 +259,11 @@ const TooltipTrigger = React.forwardRef<TooltipTriggerElement, TooltipTriggerPro
             if (!isMouseDownRef.current) context.onOpen();
           })}
           onBlur={composeEventHandlers(props.onBlur, context.onClose)}
-          // Handle anything that the browser considers a click for the element type if
-          // not using pointer e.g. Space keyup and Enter keydown
-          onClick={composeEventHandlers(props.onClick, context.onClose)}
+          onKeyDown={composeEventHandlers(props.onKeyDown, (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              context.onClose();
+            }
+          })}
         />
       </PopperPrimitive.Anchor>
     );

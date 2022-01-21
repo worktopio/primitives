@@ -205,7 +205,6 @@ const listClass = css({
 });
 
 const RECOMMENDED_CSS__TABS__TRIGGER = {
-  all: 'unset' as any,
   flexShrink: 0,
 };
 
