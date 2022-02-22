@@ -1,8 +1,24 @@
 <style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
   body {
-    margin: 0 !important;
-    padding: 0 !important;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif,
-      'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+    font-family: system-ui;
+    width: 100vw;
+    height: 100vh;
+    background-image: linear-gradient(330deg, hsl(272, 53%, 50%) 0%, hsl(226, 68%, 56%) 100%);
+    display: flex !important;
+    allign-items: flex-start;
+    justify-content: center;
+  }
+
+  body #root {
+    padding-top: 120px;
+  }
+
+  svg {
+    display: block;
   }
 </style>

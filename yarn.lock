@@ -3268,6 +3268,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@radix-ui/colors@npm:^0.1.8":
+  version: 0.1.8
+  resolution: "@radix-ui/colors@npm:0.1.8"
+  checksum: 35fb8e48b1333e0a800ee55ce554d29016c10d2cb23aa161c6476c32b8231ec78f0ae57535ad482aa35adf0b64c957d92da88ef7f3a3f4a2f8c06870208c7ed1
+  languageName: node
+  linkType: hard
+
 "@radix-ui/number@workspace:*, @radix-ui/number@workspace:packages/core/number":
   version: 0.0.0-use.local
   resolution: "@radix-ui/number@workspace:packages/core/number"
@@ -3578,6 +3585,15 @@ __metadata:
     react-dom: ^16.8 || ^17.0
   languageName: unknown
   linkType: soft
+
+"@radix-ui/react-icons@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@radix-ui/react-icons@npm:1.1.0"
+  peerDependencies:
+    react: ^16.x || ^17.x
+  checksum: 82ba2af842f93b2c4f72edaaaf0d7c0a822c280e97f11e07598fb4c47075c8c41e869aaea4b950e1375b2328eac0f12603299f2f11c60e53d3f1929bc548361a
+  languageName: node
+  linkType: hard
 
 "@radix-ui/react-id@workspace:*, @radix-ui/react-id@workspace:packages/react/id":
   version: 0.0.0-use.local
@@ -4148,21 +4164,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@stitches/core@npm:^0.0.3-canary.4":
-  version: 0.0.3-canary.4
-  resolution: "@stitches/core@npm:0.0.3-canary.4"
-  checksum: bdff6e34fc0e4cc76b45882c662830fd13a30a9914e0d191b3c9298586e8b855f770cd30a03df569230b91041e1f91e7090af6d8de71dd600404664bb1e16ac0
-  languageName: node
-  linkType: hard
-
-"@stitches/react@npm:0.0.3-canary.4":
-  version: 0.0.3-canary.4
-  resolution: "@stitches/react@npm:0.0.3-canary.4"
-  dependencies:
-    "@stitches/core": ^0.0.3-canary.4
+"@stitches/react@npm:^1.2.6":
+  version: 1.2.6
+  resolution: "@stitches/react@npm:1.2.6"
   peerDependencies:
-    react: ^16.13.1
-  checksum: 6527f0036febb9f2bdb8f4312ea60ed03ab6d303f5388d2f53b88ce6f3d0ae7ccc5495c3898054a79b2e8a3297ec119c1abcace5c2cd07d413d0f2e07f36932e
+    react: ">= 16.3.0"
+  checksum: 416088cdde17a22d6cdb04cf1cf756c6e5fc291dd7e41f82ce422bb95432ad32b6d990e7264d996d367c40bbc674d61be087e4e1f7b23eea7f81ef6266373a9c
   languageName: node
   linkType: hard
 
@@ -17020,7 +17027,9 @@ fsevents@~2.1.2:
     "@babel/template": ^7.12.13
     "@parcel/babel-plugin-transform-runtime": ^2.0.0-nightly.1823
     "@parcel/babel-preset-env": ^2.0.0-alpha.3
-    "@stitches/react": 0.0.3-canary.4
+    "@radix-ui/colors": ^0.1.8
+    "@radix-ui/react-icons": ^1.1.0
+    "@stitches/react": ^1.2.6
     "@storybook/addon-storysource": 6.1.0-beta.4
     "@storybook/react": 6.1.0-beta.4
     "@testing-library/cypress": ^7.0.6

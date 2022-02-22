@@ -33,6 +33,9 @@
     "bump:check": "yarn version check"
   },
   "dependencies": {
+    "@radix-ui/colors": "^0.1.8",
+    "@radix-ui/react-icons": "^1.1.0",
+    "@stitches/react": "^1.2.6",
     "react": "^17.0.1",
     "react-dom": "^17.0.1"
   },
@@ -43,7 +46,6 @@
     "@babel/template": "^7.12.13",
     "@parcel/babel-plugin-transform-runtime": "^2.0.0-nightly.1823",
     "@parcel/babel-preset-env": "^2.0.0-alpha.3",
-    "@stitches/react": "0.0.3-canary.4",
     "@storybook/addon-storysource": "6.1.0-beta.4",
     "@storybook/react": "6.1.0-beta.4",
     "@testing-library/cypress": "^7.0.6",
