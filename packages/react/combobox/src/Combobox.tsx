@@ -10,6 +10,8 @@ import { useId } from '@radix-ui/react-id';
 import { useComposedRefs } from '@radix-ui/react-compose-refs';
 import { composeEventHandlers } from '@radix-ui/primitive';
 import { FocusScope } from '@radix-ui/react-focus-scope';
+import * as DismissableLayer from '@radix-ui/react-dismissable-layer';
+import { Portal as PortalPrimitive } from '@radix-ui/react-portal';
 
 import type * as Radix from '@radix-ui/react-primitive';
 import type { Scope } from '@radix-ui/react-context';
@@ -45,6 +47,8 @@ type ComboboxContextValue = {
   hasTrigger: boolean;
   onTriggerAdd(): void;
   onTriggerRemove(): void;
+  inputId: string;
+  contentId: string;
 };
 
 const [ComboboxProvider, useComboboxContext] =
@@ -103,6 +107,8 @@ const Combobox: React.FC<ComboboxProps> = (props: ScopedProps<ComboboxProps>) =>
           hasTrigger={hasTrigger}
           onTriggerAdd={React.useCallback(() => setHasTrigger(true), [])}
           onTriggerRemove={React.useCallback(() => setHasTrigger(false), [])}
+          inputId={useId()}
+          contentId={useId()}
         >
           {children}
         </ComboboxProvider>
@@ -125,7 +131,7 @@ interface ComboboxInputProps extends PrimitiveInputProps {}
 
 const ComboboxInput = React.forwardRef<ComboboxInputElement, ComboboxInputProps>(
   (props: ScopedProps<ComboboxInputProps>, forwardedRef) => {
-    const { __scopeCombobox, ...inputProps } = props;
+    const { __scopeCombobox, disabled = false, ...inputProps } = props;
     const context = useComboboxContext(INPUT_NAME, __scopeCombobox);
     const popperScope = usePopperScope(__scopeCombobox);
     const getItems = useCollection(__scopeCombobox);
@@ -158,34 +164,48 @@ const ComboboxInput = React.forwardRef<ComboboxInputElement, ComboboxInputProps>
         : [PopperPrimitive.Anchor, { asChild: true, ...popperScope }];
 
     return (
-      <PopperAnchor {...popperAnchorProps}>
-        <Primitive.input
-          {...inputProps}
-          ref={forwardedRef}
-          value={context.value}
-          onChange={composeEventHandlers(props.onChange, (event) => {
-            const value = event.currentTarget.value;
-            if (value === '') context.onCurrentTabStopIdChange(null);
-            // if (context.currentTabStopId === null) context.onOpenChange(value !== '');
-            context.onValueChange(value);
-          })}
-          onKeyDown={composeEventHandlers(props.onKeyDown, (event) => {
-            if (event.key === 'ArrowDown' && !context.open) {
+      <PopperAnchor asChild {...popperAnchorProps}>
+        <DismissableLayer.Branch asChild>
+          <Primitive.input
+            id={context.inputId}
+            role="combobox"
+            aria-activedescendant={context.currentTabStopId ?? undefined}
+            aria-autocomplete="both"
+            aria-haspopup="listbox"
+            aria-expanded={context.open}
+            aria-controls={context.contentId}
+            disabled={disabled}
+            {...inputProps}
+            ref={forwardedRef}
+            value={context.value}
+            onPointerDown={composeEventHandlers(props.onPointerDown, (event) => {
+              if (!disabled && event.button === 0 && event.ctrlKey === false) {
+                context.onOpenChange(true);
+              }
+            })}
+            onChange={composeEventHandlers(props.onChange, (event) => {
+              const value = event.currentTarget.value;
+              context.onValueChange(value);
               context.onOpenChange(true);
-              queueMicrotask(() => handleNextItem(event));
-              return;
-            }
-            if (event.key === 'Enter') {
-              event.preventDefault();
-              const selectedItem = getItems().find((item) => item.selected);
-              if (!selectedItem) return;
-              context.onValueChange(selectedItem.textValue);
-              context.onOpenChange(false);
-              return;
-            }
-            handleNextItem(event);
-          })}
-        />
+            })}
+            onKeyDown={composeEventHandlers(props.onKeyDown, (event) => {
+              if (event.key === 'ArrowDown' && !context.open) {
+                context.onOpenChange(true);
+                queueMicrotask(() => handleNextItem(event));
+                return;
+              }
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                const selectedItem = getItems().find((item) => item.selected);
+                if (!selectedItem) return;
+                context.onValueChange(selectedItem.textValue);
+                context.onOpenChange(false);
+                return;
+              }
+              handleNextItem(event);
+            })}
+          />
+        </DismissableLayer.Branch>
       </PopperAnchor>
     );
   }
@@ -194,20 +214,66 @@ const ComboboxInput = React.forwardRef<ComboboxInputElement, ComboboxInputProps>
 ComboboxInput.displayName = INPUT_NAME;
 
 /* -------------------------------------------------------------------------------------------------
+ * ComboboxPortal
+ * -----------------------------------------------------------------------------------------------*/
+
+const PORTAL_NAME = 'ComboboxPortal';
+
+type PortalContextValue = { forceMount?: true };
+const [PortalProvider, usePortalContext] = createComboboxContext<PortalContextValue>(PORTAL_NAME, {
+  forceMount: undefined,
+});
+
+type PortalProps = React.ComponentPropsWithoutRef<typeof PortalPrimitive>;
+interface ComboboxPortalProps {
+  children?: React.ReactNode;
+  /**
+   * Specify a container element to portal the content into.
+   */
+  container?: PortalProps['container'];
+  /**
+   * Used to force mounting when more control is needed. Useful when
+   * controlling animation with React animation libraries.
+   */
+  forceMount?: true;
+}
+
+const ComboboxPortal: React.FC<ComboboxPortalProps> = (props: ScopedProps<ComboboxPortalProps>) => {
+  const { __scopeCombobox, forceMount, children, container } = props;
+  const context = useComboboxContext(PORTAL_NAME, __scopeCombobox);
+  return (
+    <PortalProvider scope={__scopeCombobox} forceMount={forceMount}>
+      <Presence present={forceMount || context.open}>
+        <PortalPrimitive asChild container={container}>
+          {children}
+        </PortalPrimitive>
+      </Presence>
+    </PortalProvider>
+  );
+};
+
+ComboboxPortal.displayName = PORTAL_NAME;
+
+/* -------------------------------------------------------------------------------------------------
  * ComboboxContent
  * -----------------------------------------------------------------------------------------------*/
 
 const CONTENT_NAME = 'ComboboxContent';
 
 type ComboboxContentElement = ComboboxContentImplElement;
-interface ComboboxContentProps extends ComboboxContentImplProps {}
+interface ComboboxContentProps extends ComboboxContentImplProps {
+  forceMount?: true;
+}
 
 const ComboboxContent = React.forwardRef<ComboboxContentElement, ComboboxContentProps>(
   (props: ScopedProps<ComboboxContentProps>, forwardedRef) => {
+    const portalContext = usePortalContext(CONTENT_NAME, props.__scopeCombobox);
+    const { forceMount = portalContext.forceMount, ...contentProps } = props;
     const context = useComboboxContext(CONTENT_NAME, props.__scopeCombobox);
+
     return (
-      <Presence present={context.open}>
-        <ComboboxContentImpl {...props} ref={forwardedRef} />
+      <Presence present={forceMount || context.open}>
+        <ComboboxContentImpl {...contentProps} ref={forwardedRef} />
       </Presence>
     );
   }
@@ -233,21 +299,25 @@ const ComboboxContentImpl = React.forwardRef<ComboboxContentImplElement, Combobo
           if (!context.hasTrigger) event.preventDefault();
         }}
       >
-        <PopperPrimitive.Content
-          {...popperScope}
-          {...contentProps}
-          ref={forwardedRef}
-          style={{
-            ...contentProps.style,
-            ...{
-              '--radix-combobox-content-transform-origin': 'var(--radix-popper-transform-origin)',
-              '--radix-combobox-content-available-width': 'var(--radix-popper-available-width)',
-              '--radix-combobox-content-available-height': 'var(--radix-popper-available-height)',
-              '--radix-combobox-anchor-width': 'var(--radix-popper-anchor-width)',
-              '--radix-combobox-anchor-height': 'var(--radix-popper-anchor-height)',
-            },
-          }}
-        />
+        <DismissableLayer.Root asChild onDismiss={() => context.onOpenChange(false)}>
+          <PopperPrimitive.Content
+            id={context.contentId}
+            role="listbox"
+            {...popperScope}
+            {...contentProps}
+            ref={forwardedRef}
+            style={{
+              ...contentProps.style,
+              ...{
+                '--radix-combobox-content-transform-origin': 'var(--radix-popper-transform-origin)',
+                '--radix-combobox-content-available-width': 'var(--radix-popper-available-width)',
+                '--radix-combobox-content-available-height': 'var(--radix-popper-available-height)',
+                '--radix-combobox-anchor-width': 'var(--radix-popper-anchor-width)',
+                '--radix-combobox-anchor-height': 'var(--radix-popper-anchor-height)',
+              },
+            }}
+          />
+        </DismissableLayer.Root>
       </FocusScope>
     );
   }
@@ -277,10 +347,64 @@ const ComboboxList = React.forwardRef<ComboboxListElement, ComboboxListProps>(
 ComboboxList.displayName = LIST_NAME;
 
 /* -------------------------------------------------------------------------------------------------
+ * ComboboxGroup
+ * -----------------------------------------------------------------------------------------------*/
+
+const GROUP_NAME = 'ComboboxGroup';
+
+type ComboboxGroupContextValue = { id: string };
+
+const [ComboboxGroupContextProvider, useComboboxGroupContext] =
+  createComboboxContext<ComboboxGroupContextValue>(GROUP_NAME);
+
+type ComboboxGroupElement = React.ElementRef<typeof Primitive.div>;
+interface ComboboxGroupProps extends PrimitiveDivProps {}
+
+const ComboboxGroup = React.forwardRef<ComboboxGroupElement, ComboboxGroupProps>(
+  (props: ScopedProps<ComboboxGroupProps>, forwardedRef) => {
+    const { __scopeCombobox, ...groupProps } = props;
+    const groupId = useId();
+    return (
+      <ComboboxGroupContextProvider scope={__scopeCombobox} id={groupId}>
+        <Primitive.div role="group" aria-labelledby={groupId} {...groupProps} ref={forwardedRef} />
+      </ComboboxGroupContextProvider>
+    );
+  }
+);
+
+ComboboxGroup.displayName = GROUP_NAME;
+
+/* -------------------------------------------------------------------------------------------------
+ * ComboboxLabel
+ * -----------------------------------------------------------------------------------------------*/
+
+const LABEL_NAME = 'ComboboxLabel';
+
+type ComboboxLabelElement = React.ElementRef<typeof Primitive.div>;
+interface ComboboxLabelProps extends PrimitiveDivProps {}
+
+const ComboboxLabel = React.forwardRef<ComboboxLabelElement, ComboboxLabelProps>(
+  (props: ScopedProps<ComboboxLabelProps>, forwardedRef) => {
+    const { __scopeCombobox, ...labelProps } = props;
+    const groupContext = useComboboxGroupContext(LABEL_NAME, __scopeCombobox);
+    return <Primitive.div id={groupContext.id} {...labelProps} ref={forwardedRef} />;
+  }
+);
+
+ComboboxLabel.displayName = LABEL_NAME;
+
+/* -------------------------------------------------------------------------------------------------
  * ComboboxItem
  * -----------------------------------------------------------------------------------------------*/
 
 const ITEM_NAME = 'ComboboxItem';
+
+type ComboboxItemContextValue = {
+  isSelected: boolean;
+};
+
+const [ComboboxItemContextProvider, useComboboxItemContext] =
+  createComboboxContext<ComboboxItemContextValue>(ITEM_NAME);
 
 type ComboboxItemElement = React.ElementRef<typeof Primitive.div>;
 interface ComboboxItemProps extends PrimitiveDivProps {
@@ -294,9 +418,10 @@ const ComboboxItem = React.forwardRef<ComboboxItemElement, ComboboxItemProps>(
     const context = useComboboxContext(ITEM_NAME, __scopeCombobox);
     const ref = React.useRef<ComboboxItemElement>(null);
     const composedRefs = useComposedRefs(forwardedRef, ref);
-    const selected = context.currentTabStopId === id;
+    const isFocused = context.currentTabStopId === id;
 
     const textValue = value ?? ref.current?.textContent ?? '';
+    const isSelected = context.value === textValue;
 
     const handleSelect = () => {
       if (!disabled) {
@@ -305,38 +430,64 @@ const ComboboxItem = React.forwardRef<ComboboxItemElement, ComboboxItemProps>(
       }
     };
 
-    const filtered = React.useMemo(() => {
-      return textValue.includes(context.value);
-    }, [context.value]);
-
-    return filtered ? (
-      <Collection.ItemSlot
-        scope={props.__scopeCombobox}
-        id={id}
-        focusable={!disabled}
-        selected={selected}
-        textValue={textValue}
-      >
-        <Primitive.div
+    return (
+      <ComboboxItemContextProvider scope={__scopeCombobox} isSelected={isFocused}>
+        <Collection.ItemSlot
+          scope={props.__scopeCombobox}
           id={id}
-          data-highlighted={selected}
-          {...itemProps}
-          ref={composedRefs}
-          onPointerUp={composeEventHandlers(props.onPointerUp, handleSelect)}
-          onPointerMove={composeEventHandlers(props.onPointerMove, () =>
-            context.onCurrentTabStopIdChange(id)
-          )}
-          style={{ backgroundColor: selected ? 'blue' : undefined }}
-        />
-      </Collection.ItemSlot>
-    ) : null;
+          focusable={!disabled}
+          selected={isFocused}
+          textValue={textValue}
+        >
+          <Primitive.div
+            id={id}
+            role="option"
+            aria-selected={isFocused}
+            aria-disabled={disabled || undefined}
+            data-highlighted={isFocused}
+            data-state={isSelected ? 'checked' : 'unchecked'}
+            data-disabled={disabled ? '' : undefined}
+            {...itemProps}
+            ref={composedRefs}
+            onPointerUp={composeEventHandlers(props.onPointerUp, handleSelect)}
+            onPointerMove={composeEventHandlers(props.onPointerMove, () =>
+              context.onCurrentTabStopIdChange(id)
+            )}
+            style={{ backgroundColor: isFocused ? 'blue' : undefined }}
+          />
+        </Collection.ItemSlot>
+      </ComboboxItemContextProvider>
+    );
   }
 );
 
 ComboboxItem.displayName = ITEM_NAME;
 
 /* -------------------------------------------------------------------------------------------------
- * ComboboxTrigger
+ * ComboboxItemIndicator
+ * -----------------------------------------------------------------------------------------------*/
+
+const ITEM_INDICATOR_NAME = 'ComboboxItemIndicator';
+
+type ComboboxItemIndicatorElement = React.ElementRef<typeof Primitive.span>;
+type PrimitiveSpanProps = Radix.ComponentPropsWithoutRef<typeof Primitive.span>;
+interface ComboboxItemIndicatorProps extends PrimitiveSpanProps {}
+
+const ComboboxItemIndicator = React.forwardRef<
+  ComboboxItemIndicatorElement,
+  ComboboxItemIndicatorProps
+>((props: ScopedProps<ComboboxItemIndicatorProps>, forwardedRef) => {
+  const { __scopeCombobox, ...itemIndicatorProps } = props;
+  const itemContext = useComboboxItemContext(ITEM_INDICATOR_NAME, __scopeCombobox);
+  return itemContext.isSelected ? (
+    <Primitive.span aria-hidden {...itemIndicatorProps} ref={forwardedRef} />
+  ) : null;
+});
+
+ComboboxItemIndicator.displayName = ITEM_INDICATOR_NAME;
+
+/* -------------------------------------------------------------------------------------------------
+ * ComboboxOpen
  * -----------------------------------------------------------------------------------------------*/
 
 const OPEN_NAME = 'ComboboxOpen';
@@ -458,6 +609,47 @@ const ComboboxTrigger = React.forwardRef<ComboboxTriggerElement, ComboboxTrigger
 
 ComboboxTrigger.displayName = TRIGGER_NAME;
 
+/* -------------------------------------------------------------------------------------------------
+ * ComboboxArrow
+ * -----------------------------------------------------------------------------------------------*/
+
+const ARROW_NAME = 'ComboboxArrow';
+
+type ComboboxArrowElement = React.ElementRef<typeof PopperPrimitive.Arrow>;
+type PopperArrowProps = Radix.ComponentPropsWithoutRef<typeof PopperPrimitive.Arrow>;
+interface ComboboxArrowProps extends PopperArrowProps {}
+
+const ComboboxArrow = React.forwardRef<ComboboxArrowElement, ComboboxArrowProps>(
+  (props: ScopedProps<ComboboxArrowProps>, forwardedRef) => {
+    const { __scopeCombobox, ...arrowProps } = props;
+    const popperScope = usePopperScope(__scopeCombobox);
+    const context = useComboboxContext(ARROW_NAME, __scopeCombobox);
+    return context.open ? (
+      <PopperPrimitive.Arrow {...popperScope} {...arrowProps} ref={forwardedRef} />
+    ) : null;
+  }
+);
+
+ComboboxArrow.displayName = ARROW_NAME;
+
+/* -------------------------------------------------------------------------------------------------
+ * ComboboxSeparator
+ * -----------------------------------------------------------------------------------------------*/
+
+const SEPARATOR_NAME = 'ComboboxSeparator';
+
+type ComboboxSeparatorElement = React.ElementRef<typeof Primitive.div>;
+interface ComboboxSeparatorProps extends PrimitiveDivProps {}
+
+const ComboboxSeparator = React.forwardRef<ComboboxSeparatorElement, ComboboxSeparatorProps>(
+  (props: ScopedProps<ComboboxSeparatorProps>, forwardedRef) => {
+    const { __scopeCombobox, ...separatorProps } = props;
+    return <Primitive.div aria-hidden {...separatorProps} ref={forwardedRef} />;
+  }
+);
+
+ComboboxSeparator.displayName = SEPARATOR_NAME;
+
 type Intent = 'first' | 'last' | 'prev' | 'next';
 // prettier-ignore
 const MAP_KEY_TO_FOCUS_INTENT: Record<string, Intent> = {
@@ -482,31 +674,46 @@ function getIntent(event: React.KeyboardEvent) {
 
 const Root = Combobox;
 const Input = ComboboxInput;
+const Portal = ComboboxPortal;
 const Content = ComboboxContent;
 const List = ComboboxList;
+const Group = ComboboxGroup;
+const Label = ComboboxLabel;
 const Item = ComboboxItem;
 const Trigger = ComboboxTrigger;
 const Anchor = ComboboxAnchor;
 const Open = ComboboxOpen;
+const Arrow = ComboboxArrow;
+const Separator = ComboboxSeparator;
 
 export {
   createComboboxScope,
   //
   Combobox,
   ComboboxInput,
+  ComboboxPortal,
   ComboboxContent,
   ComboboxList,
+  ComboboxGroup,
+  ComboboxLabel,
   ComboboxItem,
   ComboboxTrigger,
   ComboboxAnchor,
   ComboboxOpen,
+  ComboboxArrow,
+  ComboboxSeparator,
   //
   Root,
   Input,
+  Portal,
   Content,
   List,
+  Group,
+  Label,
   Item,
   Trigger,
   Anchor,
   Open,
+  Arrow,
+  Separator,
 };
