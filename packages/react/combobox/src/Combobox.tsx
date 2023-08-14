@@ -15,6 +15,9 @@ import { Portal as PortalPrimitive } from '@radix-ui/react-portal';
 
 import type * as Radix from '@radix-ui/react-primitive';
 import type { Scope } from '@radix-ui/react-context';
+import { useDirection } from '@radix-ui/react-direction';
+
+type Direction = 'ltr' | 'rtl';
 
 /* -------------------------------------------------------------------------------------------------
  * Combobox
@@ -49,6 +52,7 @@ type ComboboxContextValue = {
   onTriggerRemove(): void;
   inputId: string;
   contentId: string;
+  dir: ComboboxProps['dir'];
 };
 
 const [ComboboxProvider, useComboboxContext] =
@@ -62,6 +66,7 @@ interface ComboboxProps {
   value?: string;
   defaultValue?: string;
   onValueChange?(value: string): void;
+  dir?: Direction;
 }
 
 const Combobox: React.FC<ComboboxProps> = (props: ScopedProps<ComboboxProps>) => {
@@ -74,11 +79,13 @@ const Combobox: React.FC<ComboboxProps> = (props: ScopedProps<ComboboxProps>) =>
     value: valueProp,
     defaultValue,
     onValueChange,
+    dir,
   } = props;
   const popperScope = usePopperScope(__scopeCombobox);
   const [currentTabStopId, setCurrentTabStopId] = React.useState<string | null>(null);
   const [hasCustomAnchor, setHasCustomAnchor] = React.useState(false);
   const [hasTrigger, setHasTrigger] = React.useState(false);
+  const direction = useDirection(dir);
   const [open = false, setOpen] = useControllableState({
     prop: openProp,
     defaultProp: defaultOpen,
@@ -109,6 +116,7 @@ const Combobox: React.FC<ComboboxProps> = (props: ScopedProps<ComboboxProps>) =>
           onTriggerRemove={React.useCallback(() => setHasTrigger(false), [])}
           inputId={useId()}
           contentId={useId()}
+          dir={direction}
         >
           {children}
         </ComboboxProvider>
@@ -175,6 +183,7 @@ const ComboboxInput = React.forwardRef<ComboboxInputElement, ComboboxInputProps>
             aria-expanded={context.open}
             aria-controls={context.contentId}
             disabled={disabled}
+            dir={context.dir}
             {...inputProps}
             ref={forwardedRef}
             value={context.value}
@@ -303,6 +312,7 @@ const ComboboxContentImpl = React.forwardRef<ComboboxContentImplElement, Combobo
           <PopperPrimitive.Content
             id={context.contentId}
             role="listbox"
+            dir={context.dir}
             {...popperScope}
             {...contentProps}
             ref={forwardedRef}
@@ -658,8 +668,6 @@ const MAP_KEY_TO_FOCUS_INTENT: Record<string, Intent> = {
   PageUp: 'first', Home: 'first',
   PageDown: 'last', End: 'last',
 };
-
-type Direction = 'ltr' | 'rtl';
 
 function getDirectionAwareKey(key: string, dir?: Direction) {
   if (dir !== 'rtl') return key;
